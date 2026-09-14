@@ -19,7 +19,13 @@ android {
 
     buildTypes {
         debug {
-            signingConfig = signingConfigs.getByName("frb-project")
+            val frb = signingConfigs.findByName("frb-project")
+            signingConfig = if (frb?.storeFile != null) {
+                frb
+            } else {
+                // CI / no keystore available → use built-in debug keystore
+                signingConfigs.getByName("debug")
+            }
         }
         release {
             signingConfig = signingConfigs.getByName("frb-project")
