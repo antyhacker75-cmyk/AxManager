@@ -243,7 +243,7 @@ fun HomeScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGloba
     }
 }
 
-@Composable
+/*@Composable
 fun SupportCard() {
     val uriHandler = LocalUriHandler.current
     val githubFahrez182 = "https://github.com/antyhacker75-cmyk/AxManager"
@@ -280,7 +280,7 @@ fun SupportCard() {
             )
         }
     }
-}
+}*/
 
 @Composable
 fun LearnCard() {
