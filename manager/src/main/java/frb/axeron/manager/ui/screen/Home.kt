@@ -246,7 +246,7 @@ fun HomeScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGloba
 @Composable
 fun SupportCard() {
     val uriHandler = LocalUriHandler.current
-    val githubFahrez182 = "https://github.com/fahrez182/AxManager"
+    val githubFahrez182 = "https://github.com/antyhacker75-cmyk/AxManager"
 
     ElevatedCard(
         onClick = {
@@ -285,7 +285,7 @@ fun SupportCard() {
 @Composable
 fun LearnCard() {
     val uriHandler = LocalUriHandler.current
-    val learnAxManager = "https://fahrez182.github.io/AxManager"
+    val learnAxManager = "https://github.com/antyhacker75-cmyk/AxManager"
 
     ElevatedCard(
         onClick = {
@@ -334,7 +334,7 @@ fun StatusCard(
 
     val uriHandler = LocalUriHandler.current
     val extraStepUrl =
-        "https://fahrez182.github.io/AxManager/guide/faq.html#start-via-wireless-debugging-start-by-connecting-to-a-computer-the-permission-of-adb-is-limited"
+        "https://antyhacker75-cmyk.github.io/AxManager/guide/faq.html#start-via-wireless-debugging-start-by-connecting-to-a-computer-the-permission-of-adb-is-limited"
 
     ElevatedCard(
         colors = CardDefaults.elevatedCardColors(
@@ -773,8 +773,8 @@ fun InfoCard(activateViewModel: ActivateViewModel) {
 @Composable
 fun IssueReportCard() {
     val uriHandler = LocalUriHandler.current
-    val githubIssueUrl = "https://github.com/fahrez182/AxManager/issues"
-    val telegramUrl = "https://t.me/axeron_manager"
+    val githubIssueUrl = "https://github.com/antyhacker75-cmyk/AxManager/issues"
+    val telegramUrl = "https://t.me/WashiWashi123"
 
     ElevatedCard {
         Row(
