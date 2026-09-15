@@ -236,7 +236,7 @@ fun HomeScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGloba
             UpdateCard()
             InfoCard(activateViewModel)
 
-            SupportCard()
+          //  SupportCard()
             LearnCard()
             IssueReportCard()
         }
