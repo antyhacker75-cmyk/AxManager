@@ -392,7 +392,8 @@ fun PluginScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGlo
             },
             context = context,
             snackBarHost = snackBarHost,
-            listState = listState
+            listState = listState,
+            filter = selectedFilter
         )
     }
 }
