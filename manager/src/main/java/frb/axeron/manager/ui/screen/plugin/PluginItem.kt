@@ -63,18 +63,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
 import com.ramcosta.composedestinations.generated.destinations.ExecutePluginActionScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import frb.axeron.api.Axeron
 import frb.axeron.api.AxeronPluginService
 import frb.axeron.manager.R
 import frb.axeron.manager.ui.component.ConfirmResult
@@ -87,10 +83,7 @@ import frb.axeron.manager.ui.component.rememberLoadingDialog
 import frb.axeron.manager.ui.viewmodel.PluginViewModel
 import frb.axeron.manager.ui.viewmodel.SettingsViewModel
 import frb.axeron.server.PluginInfo
-import frb.axeron.shared.AxeronApiConstant
-import frb.axeron.shared.PathHelper
 import kotlinx.coroutines.launch
-import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -136,6 +129,43 @@ fun PluginConfig(
     }
 }
 
+/** Small pill badge — tight padding, small font. */
+@Composable
+private fun TinyBadge(
+    text: String,
+    color: Color,
+    filled: Boolean = true,
+    showDot: Boolean = false,
+) {
+    Row(
+        modifier = Modifier
+            .then(
+                if (filled) Modifier.background(color.copy(alpha = 0.18f), RoundedCornerShape(50))
+                else Modifier.border(1.dp, color.copy(alpha = 0.45f), RoundedCornerShape(50))
+            )
+            .padding(horizontal = 7.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        if (showDot) {
+            Box(
+                modifier = Modifier
+                    .size(5.dp)
+                    .background(color, CircleShape)
+            )
+        }
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = color,
+            fontSize = 10.sp,
+            maxLines = 1
+        )
+    }
+}
+
+/** Compact one-line info row: icon + "Label: value". */
 @Composable
 private fun InfoLine(
     icon: ImageVector,
@@ -151,8 +181,8 @@ private fun InfoLine(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = color.copy(alpha = 0.7f),
-            modifier = Modifier.size(12.dp)
+            tint = color.copy(alpha = 0.6f),
+            modifier = Modifier.size(11.dp)
         )
         Text(
             text = "$label: $value",
@@ -161,51 +191,8 @@ private fun InfoLine(
             fontSize = 11.sp,
             lineHeight = 15.sp,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-    }
-}
-
-@Composable
-private fun PluginBadge(
-    text: String,
-    color: Color,
-    filled: Boolean = false,
-    icon: ImageVector? = null,
-    showDot: Boolean = false,
-) {
-    Row(
-        modifier = Modifier
-            .then(
-                if (filled) Modifier.background(color.copy(alpha = 0.18f), RoundedCornerShape(50))
-                else Modifier.border(1.dp, color.copy(alpha = 0.55f), RoundedCornerShape(50))
-            )
-            .padding(horizontal = 8.dp, vertical = 3.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        if (showDot) {
-            Box(
-                modifier = Modifier
-                    .size(6.dp)
-                    .background(color, CircleShape)
-            )
-        }
-        if (icon != null) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = color,
-                modifier = Modifier.size(11.dp)
-            )
-        }
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
-            color = color,
-            fontSize = 10.sp,
-            letterSpacing = 0.5.sp
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false)
         )
     }
 }
@@ -249,130 +236,101 @@ fun PluginItem(
     val pluginUpdateJsonEmpty = stringResource(R.string.plugin_update_json_empty)
 
     val isActive = plugin.enabled && !plugin.remove
+    val initial = plugin.prop.name.firstOrNull()?.uppercase() ?: "?"
 
     Card(
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
         border = BorderStroke(
             width = 1.dp,
-            color = primary.copy(alpha = if (isActive) 0.55f else 0.20f)
+            color = primary.copy(alpha = if (isActive) 0.45f else 0.18f)
         ),
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(onClick = onExpandToggle)
     ) {
         Box {
+            // Soft glow from top-right corner
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(220.dp)
+                    .height(200.dp)
                     .background(
                         Brush.radialGradient(
                             colors = listOf(
-                                primary.copy(alpha = if (isActive) 0.14f else 0.04f),
+                                primary.copy(alpha = if (isActive) 0.10f else 0.03f),
                                 Color.Transparent
                             ),
-                            radius = 700f
+                            radius = 600f
                         )
                     )
             )
 
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(14.dp)) {
 
-                Row(modifier = Modifier.fillMaxWidth()) {
+                // ============ TOP ROW ============
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.Top
+                ) {
 
+                    // Icon tile — first letter, colored, no banner
                     Box(
                         modifier = Modifier
-                            .size(64.dp)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(primary.copy(alpha = 0.10f))
+                            .size(52.dp)
+                            .clip(RoundedCornerShape(13.dp))
+                            .background(primary.copy(alpha = 0.12f))
                             .border(
-                                1.5.dp,
+                                1.dp,
                                 primary.copy(alpha = 0.45f),
-                                RoundedCornerShape(14.dp)
+                                RoundedCornerShape(13.dp)
                             ),
                         contentAlignment = Alignment.Center
                     ) {
-                        val banner = plugin.prop.banner
-                        if (banner.isNotEmpty()) {
-                            val iconModel = remember(plugin.prop.id, banner) {
-                                if (banner.startsWith("http", true)) banner
-                                else try {
-                                    val path = File(
-                                        PathHelper.getWorkingPath(
-                                            Axeron.getAxeronInfo().isRoot(),
-                                            AxeronApiConstant.folder.PARENT_PLUGIN
-                                        ),
-                                        plugin.prop.id
-                                    )
-                                    val file = File(path, banner)
-                                    val stream = Axeron.newFileService()
-                                        .setFileInputStream(file.absolutePath)
-                                    stream?.use { it.readBytes() }
-                                } catch (_: Exception) {
-                                    null
-                                }
-                            }
-                            if (iconModel != null) {
-                                AsyncImage(
-                                    model = ImageRequest.Builder(LocalContext.current)
-                                        .data(iconModel)
-                                        .crossfade(true)
-                                        .build(),
-                                    contentDescription = plugin.prop.name,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .padding(6.dp)
-                                        .clip(RoundedCornerShape(10.dp))
-                                )
-                            } else {
-                                Text(
-                                    text = plugin.prop.name.firstOrNull()?.uppercase() ?: "?",
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = primary
-                                )
-                            }
-                        } else {
-                            Text(
-                                text = plugin.prop.name.firstOrNull()?.uppercase() ?: "?",
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = primary
-                            )
-                        }
+                        Text(
+                            text = initial,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = primary
+                        )
                     }
 
-                    Spacer(Modifier.width(14.dp))
+                    Spacer(Modifier.width(12.dp))
 
+                    // Info column
                     Column(modifier = Modifier.weight(1f)) {
 
+                        // Badges — version + optional UPDATE/REMOVED only (no LOADED/DISABLED here)
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            horizontalArrangement = Arrangement.spacedBy(5.dp)
                         ) {
-                            PluginBadge(
-                                text = plugin.prop.version.ifEmpty { formatSize(plugin.size) },
-                                color = primary,
-                                filled = false,
-                                icon = Icons.Default.DateRange
-                            )
-                            PluginBadge(
-                                text = when {
-                                    plugin.remove -> "REMOVED"
-                                    plugin.update -> "UPDATE"
-                                    plugin.enabled -> "LOADED"
-                                    else -> "DISABLED"
-                                },
-                                color = if (isActive) primary else onSurfaceVariant,
-                                filled = true,
-                                showDot = true
-                            )
+                            if (plugin.prop.version.isNotEmpty()) {
+                                TinyBadge(
+                                    text = plugin.prop.version,
+                                    color = primary,
+                                    filled = false
+                                )
+                            }
+                            if (plugin.update) {
+                                TinyBadge(
+                                    text = "UPDATE",
+                                    color = MaterialTheme.colorScheme.error,
+                                    filled = true
+                                )
+                            }
+                            if (plugin.remove) {
+                                TinyBadge(
+                                    text = "REMOVED",
+                                    color = MaterialTheme.colorScheme.error,
+                                    filled = true
+                                )
+                            }
                         }
 
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(6.dp))
 
                         Text(
                             text = plugin.prop.name,
@@ -401,7 +359,9 @@ fun PluginItem(
                         }
                     }
 
+                    // Right column — switch + small text (fixed width to prevent wrapping)
                     Column(
+                        modifier = Modifier.width(72.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
@@ -420,56 +380,49 @@ fun PluginItem(
                             ),
                             interactionSource = if (!plugin.hasWebUi) interactionSource else null
                         )
-                        PluginBadge(
+                        Text(
                             text = if (isActive) "Active" else "Disabled",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
                             color = if (isActive) primary else onSurfaceVariant,
-                            filled = true,
-                            showDot = true
+                            fontSize = 10.sp,
+                            maxLines = 1
                         )
                     }
 
-                    Spacer(Modifier.width(4.dp))
+                    Spacer(Modifier.width(2.dp))
 
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                         contentDescription = null,
-                        tint = onSurfaceVariant.copy(alpha = 0.55f),
+                        tint = onSurfaceVariant.copy(alpha = 0.5f),
                         modifier = Modifier
-                            .size(20.dp)
+                            .size(18.dp)
                             .align(Alignment.CenterVertically)
                     )
                 }
 
-                Spacer(Modifier.height(10.dp))
-
+                // ============ DESCRIPTION ============
                 if (plugin.prop.description.isNotEmpty()) {
+                    Spacer(Modifier.height(10.dp))
                     Text(
                         text = plugin.prop.description,
                         style = MaterialTheme.typography.bodySmall,
                         color = onSurfaceVariant,
-                        maxLines = if (expanded) 10 else 3,
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp,
+                        maxLines = if (expanded) 10 else 2,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
 
+                // ============ IGNITE PROMPT ============
                 if (plugin.update) {
                     Spacer(Modifier.height(8.dp))
                     val title = stringResource(R.string.what_is_ignite)
                     val content = stringResource(R.string.what_is_ignite_msg)
                     val confirm = stringResource(R.string.understand)
                     val neutral = stringResource(R.string.re_ignite_now)
-                    PluginBadge(
-                        text = stringResource(R.string.ignite) + when {
-                            plugin.updateInstall -> " → ${stringResource(R.string.install)}"
-                            plugin.updateRemove -> " → ${stringResource(R.string.uninstall)}"
-                            plugin.updateDisable -> " → ${stringResource(R.string.disable)}"
-                            plugin.updateEnable -> " → ${stringResource(R.string.enable)}"
-                            else -> ""
-                        },
-                        color = MaterialTheme.colorScheme.error,
-                        filled = true
-                    )
-                    Spacer(Modifier.height(6.dp))
                     FilledTonalButton(
                         onClick = {
                             scope.launch {
@@ -487,11 +440,11 @@ fun PluginItem(
                                 }
                             }
                         },
-                        modifier = Modifier.defaultMinSize(52.dp, 32.dp),
+                        modifier = Modifier.defaultMinSize(52.dp, 30.dp),
                         contentPadding = ButtonDefaults.TextButtonContentPadding
                     ) {
                         Icon(
-                            modifier = Modifier.size(18.dp),
+                            modifier = Modifier.size(16.dp),
                             imageVector = Icons.Outlined.Tune,
                             contentDescription = null
                         )
@@ -503,6 +456,7 @@ fun PluginItem(
                     }
                 }
 
+                // ============ EXPANDED ACTIONS ============
                 AnimatedVisibility(
                     visible = expanded,
                     enter = fadeIn() + expandVertically(),
@@ -526,7 +480,7 @@ fun PluginItem(
                                 contentPadding = ButtonDefaults.TextButtonContentPadding
                             ) {
                                 Icon(
-                                    modifier = Modifier.size(18.dp),
+                                    modifier = Modifier.size(16.dp),
                                     imageVector = Icons.Outlined.Terminal,
                                     contentDescription = null
                                 )
@@ -547,7 +501,7 @@ fun PluginItem(
                                 contentPadding = ButtonDefaults.TextButtonContentPadding
                             ) {
                                 Icon(
-                                    modifier = Modifier.size(18.dp),
+                                    modifier = Modifier.size(16.dp),
                                     imageVector = Icons.Filled.Web,
                                     contentDescription = null
                                 )
@@ -570,7 +524,7 @@ fun PluginItem(
                                 contentPadding = ButtonDefaults.TextButtonContentPadding
                             ) {
                                 Icon(
-                                    modifier = Modifier.size(18.dp),
+                                    modifier = Modifier.size(16.dp),
                                     imageVector = Icons.Outlined.Download,
                                     contentDescription = null
                                 )
@@ -589,7 +543,7 @@ fun PluginItem(
                                 contentPadding = ButtonDefaults.TextButtonContentPadding
                             ) {
                                 Icon(
-                                    modifier = Modifier.size(18.dp),
+                                    modifier = Modifier.size(16.dp),
                                     imageVector = Icons.Outlined.Restore,
                                     contentDescription = null
                                 )
@@ -606,7 +560,7 @@ fun PluginItem(
                                 contentPadding = ButtonDefaults.TextButtonContentPadding
                             ) {
                                 Icon(
-                                    modifier = Modifier.size(18.dp),
+                                    modifier = Modifier.size(16.dp),
                                     imageVector = Icons.Outlined.Delete,
                                     contentDescription = null
                                 )
