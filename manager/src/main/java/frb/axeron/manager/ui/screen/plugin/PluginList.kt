@@ -71,6 +71,16 @@ fun PluginList(
 
     var expandedPluginId by rememberSaveable { mutableStateOf<String?>(null) }
 
+    // ---- FILTERED LIST ----
+    val filteredPlugins = remember(viewModel.pluginList, filter) {
+        when (filter) {
+            1 -> viewModel.pluginList.filter { it.enabled && !it.remove }
+            2 -> viewModel.pluginList.filter { !it.enabled && !it.remove }
+            // 3 = System — no system flag on PluginInfo yet, shows everything for now
+            else -> viewModel.pluginList
+        }
+    }
+
     val updateText = stringResource(R.string.update)
     val changelogText = stringResource(R.string.changelog)
     val downloadingText = stringResource(R.string.downloading_plugin)
@@ -234,7 +244,7 @@ fun PluginList(
             },
         ) {
             when {
-                viewModel.pluginList.isEmpty() -> {
+                filteredPlugins.isEmpty() -> {
                     item {
                         Box(
                             modifier = Modifier.fillParentMaxSize(),
@@ -249,7 +259,7 @@ fun PluginList(
                 }
 
                 else -> {
-                    items(viewModel.pluginList) { plugin ->
+                    items(filteredPlugins) { plugin ->
                         val scope = rememberCoroutineScope()
                         val updatedModule by produceState(
                             key1 = plugin.prop.id,
