@@ -167,7 +167,7 @@ private fun InfoLine(
 }
 
 @Composable
-private fun Badge(
+private fun PluginBadge(
     text: String,
     color: Color,
     filled: Boolean = false,
@@ -353,13 +353,13 @@ fun PluginItem(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Badge(
+                            PluginBadge(
                                 text = plugin.prop.version.ifEmpty { formatSize(plugin.size) },
                                 color = primary,
                                 filled = false,
                                 icon = Icons.Default.DateRange
                             )
-                            Badge(
+                            PluginBadge(
                                 text = when {
                                     plugin.remove -> "REMOVED"
                                     plugin.update -> "UPDATE"
@@ -420,7 +420,7 @@ fun PluginItem(
                             ),
                             interactionSource = if (!plugin.hasWebUi) interactionSource else null
                         )
-                        Badge(
+                        PluginBadge(
                             text = if (isActive) "Active" else "Disabled",
                             color = if (isActive) primary else onSurfaceVariant,
                             filled = true,
@@ -458,7 +458,7 @@ fun PluginItem(
                     val content = stringResource(R.string.what_is_ignite_msg)
                     val confirm = stringResource(R.string.understand)
                     val neutral = stringResource(R.string.re_ignite_now)
-                    Badge(
+                    PluginBadge(
                         text = stringResource(R.string.ignite) + when {
                             plugin.updateInstall -> " → ${stringResource(R.string.install)}"
                             plugin.updateRemove -> " → ${stringResource(R.string.uninstall)}"
