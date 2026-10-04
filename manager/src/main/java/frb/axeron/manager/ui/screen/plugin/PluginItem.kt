@@ -1,12 +1,13 @@
 package frb.axeron.manager.ui.screen.plugin
 
-import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -15,12 +16,19 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Web
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Download
@@ -31,8 +39,9 @@ import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.Web
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DividerDefaults
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
@@ -40,6 +49,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -51,12 +61,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.ramcosta.composedestinations.generated.destinations.ExecutePluginActionScreenDestination
@@ -65,8 +78,6 @@ import frb.axeron.api.Axeron
 import frb.axeron.api.AxeronPluginService
 import frb.axeron.manager.R
 import frb.axeron.manager.ui.component.ConfirmResult
-import frb.axeron.manager.ui.component.ExtraLabel
-import frb.axeron.manager.ui.component.ExtraLabelDefaults
 import frb.axeron.manager.ui.component.SettingsItem
 import frb.axeron.manager.ui.component.SettingsItemType
 import frb.axeron.manager.ui.component.createWebUIShortcut
@@ -100,7 +111,6 @@ fun PluginConfig(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 val context = LocalContext.current
-
                 SettingsItem(
                     label = stringResource(R.string.web_ui_configuration),
                     iconVector = Icons.Outlined.Web,
@@ -117,17 +127,86 @@ fun PluginConfig(
                         label = stringResource(R.string.add_web_ui_shortcut),
                         description = stringResource(R.string.add_web_ui_shortcut_msg),
                         onClick = {
-                            createWebUIShortcut(
-                                context = context,
-                                plugin = plugin
-                            )
+                            createWebUIShortcut(context = context, plugin = plugin)
                         }
                     )
                 }
-
-
             }
         }
+    }
+}
+
+@Composable
+private fun InfoLine(
+    icon: ImageVector,
+    label: String,
+    value: String,
+    color: Color,
+) {
+    Row(
+        modifier = Modifier.padding(vertical = 1.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = color.copy(alpha = 0.7f),
+            modifier = Modifier.size(12.dp)
+        )
+        Text(
+            text = "$label: $value",
+            style = MaterialTheme.typography.labelSmall,
+            color = color,
+            fontSize = 11.sp,
+            lineHeight = 15.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+private fun Badge(
+    text: String,
+    color: Color,
+    filled: Boolean = false,
+    icon: ImageVector? = null,
+    showDot: Boolean = false,
+) {
+    Row(
+        modifier = Modifier
+            .then(
+                if (filled) Modifier.background(color.copy(alpha = 0.18f), RoundedCornerShape(50))
+                else Modifier.border(1.dp, color.copy(alpha = 0.55f), RoundedCornerShape(50))
+            )
+            .padding(horizontal = 8.dp, vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        if (showDot) {
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .background(color, CircleShape)
+            )
+        }
+        if (icon != null) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(11.dp)
+            )
+        }
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = color,
+            fontSize = 10.sp,
+            letterSpacing = 0.5.sp
+        )
     }
 }
 
@@ -148,467 +227,394 @@ fun PluginItem(
 ) {
     var showExtraSetDialog by remember { mutableStateOf(false) }
 
-    PluginConfig(
-        showExtraSetDialog,
-        plugin
-    ) {
+    PluginConfig(showExtraSetDialog, plugin) {
         showExtraSetDialog = false
     }
 
-    ElevatedCard(
+    val primary = MaterialTheme.colorScheme.primary
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
+
+    val confirmDialog = rememberConfirmDialog()
+    val reigniteLoading = rememberLoadingDialog()
+    val scope = rememberCoroutineScope()
+    val interactionSource = remember { MutableInteractionSource() }
+
+    val pluginVersion = stringResource(R.string.plugin_version)
+    val pluginAuthor = stringResource(R.string.plugin_author)
+    val pluginId = stringResource(R.string.plugin_id)
+    val pluginVersionCode = stringResource(R.string.plugin_version_code)
+    val pluginAxeronSupport = stringResource(R.string.plugin_axeron_support)
+    val pluginUpdateJson = stringResource(R.string.plugin_update_json)
+    val pluginUpdateJsonEmpty = stringResource(R.string.plugin_update_json_empty)
+
+    val isActive = plugin.enabled && !plugin.remove
+
+    Card(
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        border = BorderStroke(
+            width = 1.dp,
+            color = primary.copy(alpha = if (isActive) 0.55f else 0.20f)
+        ),
         modifier = Modifier
             .fillMaxWidth()
-            .clip(MaterialTheme.shapes.medium)
-            .combinedClickable(
-                onClick = onExpandToggle,
-            )
+            .combinedClickable(onClick = onExpandToggle)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
-            val context = LocalContext.current
-            val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
-            val useBanner = prefs.getBoolean("use_banner", true)
-
-            if (useBanner && plugin.prop.banner.isNotEmpty()) {
-                val colorScheme = MaterialTheme.colorScheme
-                val context = LocalContext.current
-                val fadeColor = colorScheme.surfaceVariant
-                val alpha = 0.5f
-
-                Box(
-                    modifier = Modifier
-                        .matchParentSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (plugin.prop.banner.startsWith(
-                            "https",
-                            true
-                        ) || plugin.prop.banner.startsWith(
-                            "http",
-                            true
+        Box {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(220.dp)
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(
+                                primary.copy(alpha = if (isActive) 0.14f else 0.04f),
+                                Color.Transparent
+                            ),
+                            radius = 700f
                         )
-                    ) {
-                        AsyncImage(
-                            model = plugin.prop.banner,
-                            contentDescription = null,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .fillMaxHeight(),
-                            contentScale = ContentScale.Crop,
-                            alpha = 0.18f
-                        )
-                    } else {
-                        val bannerData = remember(plugin.prop.id) {
-                            try {
-                                val path = File(
-                                    PathHelper.getWorkingPath(
-                                        Axeron.getAxeronInfo().isRoot(),
-                                        AxeronApiConstant.folder.PARENT_PLUGIN
-                                    ),
-                                    plugin.prop.id
-                                )
-                                val bannerFile = File(path, plugin.prop.banner)
-                                val file =
-                                    Axeron.newFileService()
-                                        .setFileInputStream(bannerFile.absolutePath)
-                                file?.use {
-                                    it.readBytes()
-                                }
-                            } catch (_: Exception) {
-                                null
-                            }
-                        }
-                        if (bannerData != null) {
-                            AsyncImage(
-                                model = ImageRequest.Builder(context)
-                                    .data(bannerData)
-                                    .build(),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .fillMaxHeight(),
-                                contentScale = ContentScale.Crop,
-                                alpha = 0.18f
-                            )
-                        }
-                    }
+                    )
+            )
+
+            Column(modifier = Modifier.padding(16.dp)) {
+
+                Row(modifier = Modifier.fillMaxWidth()) {
+
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .fillMaxHeight()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        fadeColor.copy(alpha = 0.0f),
-                                        fadeColor.copy(alpha = alpha)
-                                    ),
-                                    startY = 0f,
-                                    endY = Float.POSITIVE_INFINITY
+                            .size(64.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(primary.copy(alpha = 0.10f))
+                            .border(
+                                1.5.dp,
+                                primary.copy(alpha = 0.45f),
+                                RoundedCornerShape(14.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val banner = plugin.prop.banner
+                        if (banner.isNotEmpty()) {
+                            val iconModel = remember(plugin.prop.id, banner) {
+                                if (banner.startsWith("http", true)) banner
+                                else try {
+                                    val path = File(
+                                        PathHelper.getWorkingPath(
+                                            Axeron.getAxeronInfo().isRoot(),
+                                            AxeronApiConstant.folder.PARENT_PLUGIN
+                                        ),
+                                        plugin.prop.id
+                                    )
+                                    val file = File(path, banner)
+                                    val stream = Axeron.newFileService()
+                                        .setFileInputStream(file.absolutePath)
+                                    stream?.use { it.readBytes() }
+                                } catch (_: Exception) {
+                                    null
+                                }
+                            }
+                            if (iconModel != null) {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(LocalContext.current)
+                                        .data(iconModel)
+                                        .crossfade(true)
+                                        .build(),
+                                    contentDescription = plugin.prop.name,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .padding(6.dp)
+                                        .clip(RoundedCornerShape(10.dp))
                                 )
+                            } else {
+                                Text(
+                                    text = plugin.prop.name.firstOrNull()?.uppercase() ?: "?",
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = primary
+                                )
+                            }
+                        } else {
+                            Text(
+                                text = plugin.prop.name.firstOrNull()?.uppercase() ?: "?",
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = primary
                             )
+                        }
+                    }
+
+                    Spacer(Modifier.width(14.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Badge(
+                                text = plugin.prop.version.ifEmpty { formatSize(plugin.size) },
+                                color = primary,
+                                filled = false,
+                                icon = Icons.Default.DateRange
+                            )
+                            Badge(
+                                text = when {
+                                    plugin.remove -> "REMOVED"
+                                    plugin.update -> "UPDATE"
+                                    plugin.enabled -> "LOADED"
+                                    else -> "DISABLED"
+                                },
+                                color = if (isActive) primary else onSurfaceVariant,
+                                filled = true,
+                                showDot = true
+                            )
+                        }
+
+                        Spacer(Modifier.height(8.dp))
+
+                        Text(
+                            text = plugin.prop.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+
+                        Spacer(Modifier.height(4.dp))
+
+                        InfoLine(Icons.Default.DateRange, pluginVersion, plugin.prop.version, onSurfaceVariant)
+                        InfoLine(Icons.Default.Person, pluginAuthor, plugin.prop.author, onSurfaceVariant)
+
+                        if (settings.isDeveloperModeEnabled) {
+                            InfoLine(Icons.Default.Info, pluginId, plugin.prop.id, onSurfaceVariant)
+                            InfoLine(Icons.Default.Build, pluginVersionCode, plugin.prop.versionCode.toString(), onSurfaceVariant)
+                            InfoLine(Icons.Outlined.Tune, pluginAxeronSupport, plugin.prop.axeronPlugin.toString(), onSurfaceVariant)
+                            InfoLine(
+                                Icons.Outlined.Download,
+                                pluginUpdateJson,
+                                if (plugin.prop.updateJson.isNotEmpty()) plugin.prop.updateJson else pluginUpdateJsonEmpty,
+                                onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Switch(
+                            checked = isActive,
+                            enabled = (if (plugin.enabled) !plugin.updateDisable else !plugin.updateEnable)
+                                    && !plugin.remove && !plugin.updateInstall,
+                            onCheckedChange = onCheckChanged,
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = primary,
+                                checkedBorderColor = primary,
+                                uncheckedThumbColor = onSurfaceVariant,
+                                uncheckedTrackColor = Color.Transparent,
+                                uncheckedBorderColor = onSurfaceVariant.copy(alpha = 0.5f)
+                            ),
+                            interactionSource = if (!plugin.hasWebUi) interactionSource else null
+                        )
+                        Badge(
+                            text = if (isActive) "Active" else "Disabled",
+                            color = if (isActive) primary else onSurfaceVariant,
+                            filled = true,
+                            showDot = true
+                        )
+                    }
+
+                    Spacer(Modifier.width(4.dp))
+
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = onSurfaceVariant.copy(alpha = 0.55f),
+                        modifier = Modifier
+                            .size(20.dp)
+                            .align(Alignment.CenterVertically)
                     )
                 }
-            }
 
-            Column {
-                val interactionSource = remember { MutableInteractionSource() }
+                Spacer(Modifier.height(10.dp))
 
-                Column(
-                    modifier = Modifier
-                        .padding(22.dp, 18.dp, 22.dp, 12.dp)
-                )
-                {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        val confirmDialog = rememberConfirmDialog()
-                        val reigniteLoading = rememberLoadingDialog()
-                        val scope = rememberCoroutineScope()
-
-                        val pluginVersion = stringResource(R.string.plugin_version)
-                        val pluginAuthor = stringResource(R.string.plugin_author)
-                        val pluginId = stringResource(R.string.plugin_id)
-                        val pluginVersionCode = stringResource(R.string.plugin_version_code)
-                        val pluginAxeronSupport = stringResource(R.string.plugin_axeron_support)
-                        val pluginUpdateJson = stringResource(R.string.plugin_update_json)
-                        val pluginUpdateJsonEmpty = stringResource(R.string.plugin_update_json_empty)
-
-                        Column(
-                            modifier = Modifier.fillMaxWidth(0.8f)
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                ExtraLabel(
-                                    iconVector = Icons.Outlined.Tune,
-                                    text = formatSize(plugin.size),
-                                    style = ExtraLabelDefaults.style.copy(
-                                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                                    ),
-                                    onClick = {
-                                        showExtraSetDialog = true
-                                    }
-                                )
-                                if (plugin.update) {
-                                    val title = stringResource(R.string.what_is_ignite)
-                                    val content = stringResource(R.string.what_is_ignite_msg)
-                                    val confirm = stringResource(R.string.understand)
-                                    val neutral = stringResource(R.string.re_ignite_now)
-                                    ExtraLabel(
-                                        text = stringResource(R.string.ignite) + when {
-                                            plugin.updateInstall -> " → ${stringResource(R.string.install)}"
-                                            plugin.updateRemove -> " → ${stringResource(R.string.uninstall)}"
-                                            plugin.updateDisable -> " → ${stringResource(R.string.disable)}"
-                                            plugin.updateEnable -> " → ${stringResource(R.string.enable)}"
-                                            else -> ""
-                                        },
-                                        style = ExtraLabelDefaults.style.copy(
-                                            containerColor = MaterialTheme.colorScheme.errorContainer,
-                                            contentColor = MaterialTheme.colorScheme.onErrorContainer
-                                        ),
-                                        onClick = {
-                                            scope.launch {
-                                                val result = confirmDialog.awaitConfirm(
-                                                    title,
-                                                    content = content,
-                                                    confirm = confirm,
-                                                    neutral = neutral
-                                                )
-                                                if (result == ConfirmResult.Neutral) {
-                                                    val success = reigniteLoading.withLoading {
-                                                        AxeronPluginService.igniteSuspendService()
-                                                    }
-
-                                                    if (success) {
-                                                        viewModel.fetchModuleList()
-                                                    }
-
-                                                }
-                                            }
-
-                                        }
-                                    )
-                                }
-
-                                if (updateUrl.isNotEmpty() && !plugin.remove && !plugin.update) {
-                                    ExtraLabel(
-                                        text = stringResource(R.string.update),
-                                        style = ExtraLabelDefaults.style.copy(
-                                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-                                        )
-                                    )
-                                }
-                                if (plugin.enabled && !plugin.remove && !plugin.update) {
-                                    if (plugin.hasWebUi) {
-                                        ExtraLabel(
-                                            text = stringResource(R.string.web_ui),
-                                            style = ExtraLabelDefaults.style.copy(
-                                                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                                            )
-                                        )
-                                    }
-                                    if (plugin.hasActionScript) {
-                                        ExtraLabel(
-                                            text = stringResource(R.string.action),
-                                            style = ExtraLabelDefaults.style.copy(
-                                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                                            )
-                                        )
-                                    }
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            Text(
-                                text = plugin.prop.name,
-                                fontSize = MaterialTheme.typography.titleMedium.fontSize,
-                                fontWeight = FontWeight.SemiBold,
-                                lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                                fontFamily = MaterialTheme.typography.titleMedium.fontFamily,
-                            )
-
-                            Text(
-                                text = "$pluginVersion: ${plugin.prop.version}",
-                                fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                                lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                                fontFamily = MaterialTheme.typography.bodySmall.fontFamily,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-
-                            Text(
-                                text = "$pluginAuthor: ${plugin.prop.author}",
-                                fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                                lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                                fontFamily = MaterialTheme.typography.bodySmall.fontFamily,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-
-                            AnimatedVisibility(
-                                visible = settings.isDeveloperModeEnabled,
-                                enter = fadeIn() + expandVertically(),
-                                exit = shrinkVertically() + fadeOut()
-                            ) {
-                                Column {
-                                    Text(
-                                        text = "$pluginId: ${plugin.prop.id}",
-                                        fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                                        lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                                        fontFamily = MaterialTheme.typography.bodySmall.fontFamily,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-
-                                    Text(
-                                        text = "$pluginVersionCode: ${plugin.prop.versionCode}",
-                                        fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                                        lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                                        fontFamily = MaterialTheme.typography.bodySmall.fontFamily,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-
-                                    Text(
-                                        text = "$pluginAxeronSupport: ${plugin.prop.axeronPlugin}",
-                                        fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                                        lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                                        fontFamily = MaterialTheme.typography.bodySmall.fontFamily,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-
-                                    Text(
-                                        text = if (plugin.prop.updateJson.isNotEmpty()) "$pluginUpdateJson: ${plugin.prop.updateJson}" else "$pluginUpdateJson: $pluginUpdateJsonEmpty",
-                                        fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                                        lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                                        fontFamily = MaterialTheme.typography.bodySmall.fontFamily,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-
-                            }
-
-                        }
-
-                        Spacer(modifier = Modifier.weight(1f))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End,
-                        ) {
-                            Switch(
-                                enabled = (if (plugin.enabled) !plugin.updateDisable else !plugin.updateEnable) && !plugin.remove && !plugin.updateInstall,
-                                checked = plugin.enabled && !plugin.remove,
-                                onCheckedChange = onCheckChanged,
-                                interactionSource = if (!plugin.hasWebUi) interactionSource else null
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
+                if (plugin.prop.description.isNotEmpty()) {
                     Text(
                         text = plugin.prop.description,
-                        fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                        fontFamily = MaterialTheme.typography.bodySmall.fontFamily,
-                        lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                        fontWeight = MaterialTheme.typography.bodySmall.fontWeight,
-                        overflow = TextOverflow.Ellipsis,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 4
+                        style = MaterialTheme.typography.bodySmall,
+                        color = onSurfaceVariant,
+                        maxLines = if (expanded) 10 else 3,
+                        overflow = TextOverflow.Ellipsis
                     )
+                }
 
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    if (expanded) {
-                        Spacer(modifier = Modifier.height(6.dp))
-                    }
-
-                    AnimatedVisibility(
-                        visible = expanded,
-                        enter = fadeIn() + expandVertically(),
-                        exit = shrinkVertically() + fadeOut()
+                if (plugin.update) {
+                    Spacer(Modifier.height(8.dp))
+                    val title = stringResource(R.string.what_is_ignite)
+                    val content = stringResource(R.string.what_is_ignite_msg)
+                    val confirm = stringResource(R.string.understand)
+                    val neutral = stringResource(R.string.re_ignite_now)
+                    Badge(
+                        text = stringResource(R.string.ignite) + when {
+                            plugin.updateInstall -> " → ${stringResource(R.string.install)}"
+                            plugin.updateRemove -> " → ${stringResource(R.string.uninstall)}"
+                            plugin.updateDisable -> " → ${stringResource(R.string.disable)}"
+                            plugin.updateEnable -> " → ${stringResource(R.string.enable)}"
+                            else -> ""
+                        },
+                        color = MaterialTheme.colorScheme.error,
+                        filled = true
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    FilledTonalButton(
+                        onClick = {
+                            scope.launch {
+                                val result = confirmDialog.awaitConfirm(
+                                    title,
+                                    content = content,
+                                    confirm = confirm,
+                                    neutral = neutral
+                                )
+                                if (result == ConfirmResult.Neutral) {
+                                    val success = reigniteLoading.withLoading {
+                                        AxeronPluginService.igniteSuspendService()
+                                    }
+                                    if (success) viewModel.fetchModuleList()
+                                }
+                            }
+                        },
+                        modifier = Modifier.defaultMinSize(52.dp, 32.dp),
+                        contentPadding = ButtonDefaults.TextButtonContentPadding
                     ) {
-                        Row(
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            if (plugin.hasActionScript && !plugin.updateInstall) {
-                                FilledTonalButton(
-                                    modifier = Modifier.defaultMinSize(52.dp, 32.dp),
-                                    enabled = !plugin.remove && plugin.enabled && !plugin.update,
-                                    onClick = {
-                                        navigator!!.navigate(
-                                            ExecutePluginActionScreenDestination(plugin)
-                                        )
-                                        viewModel.markNeedRefresh()
-                                    },
-                                    contentPadding = ButtonDefaults.TextButtonContentPadding
-                                ) {
-                                    Icon(
-                                        modifier = Modifier.size(20.dp),
-                                        imageVector = Icons.Outlined.Terminal,
-                                        contentDescription = null
-                                    )
-                                    if (!plugin.hasWebUi && updateUrl.isEmpty()) {
-                                        Text(
-                                            modifier = Modifier.padding(start = 7.dp),
-                                            text = stringResource(R.string.action),
-                                            fontFamily = MaterialTheme.typography.labelMedium.fontFamily,
-                                            fontSize = MaterialTheme.typography.labelMedium.fontSize
-                                        )
-                                    }
-                                }
+                        Icon(
+                            modifier = Modifier.size(18.dp),
+                            imageVector = Icons.Outlined.Tune,
+                            contentDescription = null
+                        )
+                        Text(
+                            modifier = Modifier.padding(start = 6.dp),
+                            text = stringResource(R.string.re_ignite_now),
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
+                }
 
-                                Spacer(modifier = Modifier.weight(0.1f, true))
+                AnimatedVisibility(
+                    visible = expanded,
+                    enter = fadeIn() + expandVertically(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (plugin.hasActionScript && !plugin.updateInstall) {
+                            FilledTonalButton(
+                                modifier = Modifier.defaultMinSize(52.dp, 32.dp),
+                                enabled = !plugin.remove && plugin.enabled && !plugin.update,
+                                onClick = {
+                                    navigator?.navigate(ExecutePluginActionScreenDestination(plugin))
+                                    viewModel.markNeedRefresh()
+                                },
+                                contentPadding = ButtonDefaults.TextButtonContentPadding
+                            ) {
+                                Icon(
+                                    modifier = Modifier.size(18.dp),
+                                    imageVector = Icons.Outlined.Terminal,
+                                    contentDescription = null
+                                )
+                                Text(
+                                    modifier = Modifier.padding(start = 6.dp),
+                                    text = stringResource(R.string.action),
+                                    style = MaterialTheme.typography.labelMedium
+                                )
                             }
+                        }
 
-                            if (plugin.hasWebUi && !plugin.updateInstall) {
-                                FilledTonalButton(
-                                    modifier = Modifier.defaultMinSize(52.dp, 32.dp),
-                                    enabled = !plugin.remove && plugin.enabled && !plugin.update,
-                                    onClick = {
-                                        onClick(plugin)
-                                    },
-                                    interactionSource = interactionSource,
-                                    contentPadding = ButtonDefaults.TextButtonContentPadding
-                                ) {
-                                    Icon(
-                                        modifier = Modifier.size(20.dp),
-                                        imageVector = Icons.Filled.Web,
-                                        contentDescription = null
-                                    )
-                                    if (!plugin.hasActionScript && updateUrl.isEmpty()) {
-                                        Text(
-                                            modifier = Modifier.padding(start = 7.dp),
-                                            fontFamily = MaterialTheme.typography.labelMedium.fontFamily,
-                                            fontSize = MaterialTheme.typography.labelMedium.fontSize,
-                                            text = stringResource(R.string.open)
-                                        )
-                                    }
-                                }
+                        if (plugin.hasWebUi && !plugin.updateInstall) {
+                            FilledTonalButton(
+                                modifier = Modifier.defaultMinSize(52.dp, 32.dp),
+                                enabled = !plugin.remove && plugin.enabled && !plugin.update,
+                                onClick = { onClick(plugin) },
+                                interactionSource = interactionSource,
+                                contentPadding = ButtonDefaults.TextButtonContentPadding
+                            ) {
+                                Icon(
+                                    modifier = Modifier.size(18.dp),
+                                    imageVector = Icons.Filled.Web,
+                                    contentDescription = null
+                                )
+                                Text(
+                                    modifier = Modifier.padding(start = 6.dp),
+                                    text = stringResource(R.string.open),
+                                    style = MaterialTheme.typography.labelMedium
+                                )
                             }
+                        }
 
-                            Spacer(modifier = Modifier.weight(1f, true))
+                        Spacer(Modifier.weight(1f))
 
-                            if (updateUrl.isNotEmpty() && !plugin.remove && !plugin.updateInstall) {
-                                Button(
-                                    modifier = Modifier.defaultMinSize(52.dp, 32.dp),
-                                    enabled = !plugin.update,
-                                    onClick = {
-                                        onUpdate(plugin)
-                                    },
-                                    shape = ButtonDefaults.textShape,
-                                    contentPadding = ButtonDefaults.TextButtonContentPadding
-                                ) {
-                                    Icon(
-                                        modifier = Modifier.size(20.dp),
-                                        imageVector = Icons.Outlined.Download,
-                                        contentDescription = null
-                                    )
-                                    if (!plugin.hasActionScript || !plugin.hasWebUi) {
-                                        Text(
-                                            modifier = Modifier.padding(start = 7.dp),
-                                            fontFamily = MaterialTheme.typography.labelMedium.fontFamily,
-                                            fontSize = MaterialTheme.typography.labelMedium.fontSize,
-                                            text = stringResource(R.string.update)
-                                        )
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.weight(0.1f, true))
+                        if (updateUrl.isNotEmpty() && !plugin.remove && !plugin.updateInstall) {
+                            Button(
+                                modifier = Modifier.defaultMinSize(52.dp, 32.dp),
+                                enabled = !plugin.update,
+                                onClick = { onUpdate(plugin) },
+                                shape = ButtonDefaults.textShape,
+                                contentPadding = ButtonDefaults.TextButtonContentPadding
+                            ) {
+                                Icon(
+                                    modifier = Modifier.size(18.dp),
+                                    imageVector = Icons.Outlined.Download,
+                                    contentDescription = null
+                                )
+                                Text(
+                                    modifier = Modifier.padding(start = 6.dp),
+                                    text = stringResource(R.string.update),
+                                    style = MaterialTheme.typography.labelMedium
+                                )
                             }
+                        }
 
-                            if (plugin.remove) {
-                                FilledTonalButton(
-                                    modifier = Modifier.defaultMinSize(52.dp, 32.dp),
-                                    onClick = {
-                                        onRestore(plugin)
-                                    },
-                                    contentPadding = ButtonDefaults.TextButtonContentPadding
-                                ) {
-                                    Icon(
-                                        modifier = Modifier.size(20.dp),
-                                        imageVector = Icons.Outlined.Restore,
-                                        contentDescription = null
-                                    )
-                                    if (!plugin.hasActionScript && !plugin.hasWebUi && updateUrl.isEmpty()) {
-                                        Text(
-                                            modifier = Modifier.padding(start = 7.dp),
-                                            fontFamily = MaterialTheme.typography.labelMedium.fontFamily,
-                                            fontSize = MaterialTheme.typography.labelMedium.fontSize,
-                                            text = stringResource(R.string.restore)
-                                        )
-                                    }
-                                }
-                            } else {
-                                FilledTonalButton(
-                                    modifier = Modifier.defaultMinSize(52.dp, 32.dp),
-                                    enabled = true,
-                                    onClick = {
-                                        onUninstall(plugin)
-                                    },
-                                    contentPadding = ButtonDefaults.TextButtonContentPadding
-                                ) {
-                                    Icon(
-                                        modifier = Modifier.size(20.dp),
-                                        imageVector = Icons.Outlined.Delete,
-                                        contentDescription = null
-                                    )
-                                    if (!plugin.hasActionScript && !plugin.hasWebUi && updateUrl.isEmpty()) {
-                                        Text(
-                                            modifier = Modifier.padding(start = 7.dp),
-                                            fontFamily = MaterialTheme.typography.labelMedium.fontFamily,
-                                            fontSize = MaterialTheme.typography.labelMedium.fontSize,
-                                            text = stringResource(R.string.uninstall)
-                                        )
-                                    }
-                                }
+                        if (plugin.remove) {
+                            FilledTonalButton(
+                                modifier = Modifier.defaultMinSize(52.dp, 32.dp),
+                                onClick = { onRestore(plugin) },
+                                contentPadding = ButtonDefaults.TextButtonContentPadding
+                            ) {
+                                Icon(
+                                    modifier = Modifier.size(18.dp),
+                                    imageVector = Icons.Outlined.Restore,
+                                    contentDescription = null
+                                )
+                                Text(
+                                    modifier = Modifier.padding(start = 6.dp),
+                                    text = stringResource(R.string.restore),
+                                    style = MaterialTheme.typography.labelMedium
+                                )
+                            }
+                        } else {
+                            FilledTonalButton(
+                                modifier = Modifier.defaultMinSize(52.dp, 32.dp),
+                                onClick = { onUninstall(plugin) },
+                                contentPadding = ButtonDefaults.TextButtonContentPadding
+                            ) {
+                                Icon(
+                                    modifier = Modifier.size(18.dp),
+                                    imageVector = Icons.Outlined.Delete,
+                                    contentDescription = null
+                                )
+                                Text(
+                                    modifier = Modifier.padding(start = 6.dp),
+                                    text = stringResource(R.string.uninstall),
+                                    style = MaterialTheme.typography.labelMedium
+                                )
                             }
                         }
                     }
