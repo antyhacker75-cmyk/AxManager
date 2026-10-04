@@ -228,7 +228,7 @@ fun HomeScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGloba
 
             UpdateCard()
 
-            SectionLabel(stringResource(R.string.android_version).let { "System" })
+            SectionLabel("System")
             InfoCard(activateViewModel)
 
             LearnCard()
@@ -244,7 +244,7 @@ private fun SectionLabel(text: String) {
         style = MaterialTheme.typography.labelSmall,
         fontWeight = FontWeight.SemiBold,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(start = 10.dp, top = 4.dp, bottom = -6.dp)
+        modifier = Modifier.padding(start = 10.dp, top = 4.dp)
     )
 }
 
@@ -323,7 +323,6 @@ fun StatusCard(
                 .padding(22.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Status pill row
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -360,7 +359,6 @@ fun StatusCard(
                 }
             }
 
-            // Title + subtitle + big icon
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(
                     modifier = Modifier.weight(1f),
@@ -426,7 +424,6 @@ fun StatusCard(
                 }
             }
 
-            // Uptime pill (running only)
             if (isRunning) {
                 var time by remember { mutableLongStateOf(0) }
                 LaunchedEffect(Unit) {
