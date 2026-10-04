@@ -13,7 +13,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -37,7 +36,6 @@ import androidx.compose.material.icons.outlined.Cancel
 import androidx.compose.material.icons.outlined.Update
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -60,6 +58,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -118,10 +117,10 @@ fun HomeScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGloba
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
-                                .size(42.dp)
+                                .size(40.dp)
                                 .background(
                                     MaterialTheme.colorScheme.primaryContainer,
-                                    RoundedCornerShape(14.dp)
+                                    RoundedCornerShape(13.dp)
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
@@ -129,7 +128,7 @@ fun HomeScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGloba
                                 painter = painterResource(R.drawable.ic_axeron),
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.size(26.dp)
+                                modifier = Modifier.size(24.dp)
                             )
                         }
                         Spacer(Modifier.width(12.dp))
@@ -137,11 +136,11 @@ fun HomeScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGloba
                             Text(
                                 text = stringResource(R.string.app_name),
                                 style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.SemiBold,
+                                fontWeight = FontWeight.Bold,
                             )
                             Text(
-                                text = "v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
-                                style = MaterialTheme.typography.bodySmall,
+                                text = "v${BuildConfig.VERSION_NAME}",
+                                style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontWeight = FontWeight.Medium,
                             )
@@ -151,7 +150,6 @@ fun HomeScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGloba
                 actions = {
                     val loadingDialog = rememberLoadingDialog()
                     val scope = rememberCoroutineScope()
-
                     var showDialog by remember { mutableStateOf(false) }
 
                     if (showDialog) {
@@ -162,9 +160,7 @@ fun HomeScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGloba
                                     val success = loadingDialog.withLoading {
                                         AxeronPluginService.igniteSuspendService()
                                     }
-                                    if (success) {
-                                        pluginViewModel.fetchModuleList()
-                                    }
+                                    if (success) pluginViewModel.fetchModuleList()
                                 }
                             },
                             onShutdown = { Axeron.destroy() },
@@ -184,7 +180,7 @@ fun HomeScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGloba
 
                     AnimatedVisibility(visible = isRunning) {
                         IconButton(
-                            modifier = Modifier.padding(end = 2.dp),
+                            modifier = Modifier.padding(end = 4.dp),
                             onClick = { showDialog = true }
                         ) {
                             Icon(
@@ -193,7 +189,7 @@ fun HomeScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGloba
                             )
                         }
                     }
-                    Spacer(modifier = Modifier.padding(end = 12.dp))
+                    Spacer(modifier = Modifier.padding(end = 8.dp))
                 },
                 scrollBehavior = scrollBehavior,
             )
@@ -215,27 +211,41 @@ fun HomeScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGloba
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
-                .padding(top = 12.dp)
+                .padding(top = 8.dp)
                 .padding(bottom = 120.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             StatusCard(activateViewModel = activateViewModel) {
                 if (!it) navigator.navigate(ActivateScreenDestination)
             }
 
             AnimatedVisibility(visible = isRunning) {
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     PluginCard(Modifier.weight(1f), pluginViewModel)
                     PrivilegeCard(Modifier.weight(1f), privilegeViewModel)
                 }
             }
 
             UpdateCard()
+
+            SectionLabel(stringResource(R.string.android_version).let { "System" })
             InfoCard(activateViewModel)
+
             LearnCard()
             IssueReportCard()
         }
     }
+}
+
+@Composable
+private fun SectionLabel(text: String) {
+    Text(
+        text = text.uppercase(),
+        style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.SemiBold,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 10.dp, top = 4.dp, bottom = -6.dp)
+    )
 }
 
 @Composable
@@ -253,40 +263,41 @@ fun StatusCard(
     val extraStepUrl =
         "https://antyhacker75-cmyk.github.io/AxManager/guide/faq.html#start-via-wireless-debugging-start-by-connecting-to-a-computer-the-permission-of-adb-is-limited"
 
-    val containerColor = when {
+    val gradientStart = when {
         isUpdating -> MaterialTheme.colorScheme.primaryContainer
         isNeedExtraStep -> MaterialTheme.colorScheme.errorContainer
         isRunning -> MaterialTheme.colorScheme.primaryContainer
         else -> MaterialTheme.colorScheme.errorContainer
     }
+    val gradientEnd = when {
+        isUpdating -> MaterialTheme.colorScheme.tertiaryContainer
+        isNeedExtraStep -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.7f)
+        isRunning -> MaterialTheme.colorScheme.tertiaryContainer
+        else -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.7f)
+    }
     val contentColor = when {
-        isUpdating -> MaterialTheme.colorScheme.onPrimaryContainer
         isNeedExtraStep -> MaterialTheme.colorScheme.onErrorContainer
-        isRunning -> MaterialTheme.colorScheme.onPrimaryContainer
-        else -> MaterialTheme.colorScheme.onErrorContainer
+        else -> MaterialTheme.colorScheme.onPrimaryContainer
     }
     val accentColor = when {
-        isUpdating -> MaterialTheme.colorScheme.primary
         isNeedExtraStep -> MaterialTheme.colorScheme.error
-        isRunning -> MaterialTheme.colorScheme.primary
-        else -> MaterialTheme.colorScheme.error
+        else -> MaterialTheme.colorScheme.primary
     }
 
     Card(
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = containerColor),
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(IntrinsicSize.Min)
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        modifier = Modifier.fillMaxWidth()
     ) {
         val scope = rememberCoroutineScope()
         val updating = stringResource(R.string.updating)
         var debugClickCount by remember { mutableIntStateOf(0) }
         var debugJob: Job? by remember { mutableStateOf(null) }
 
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .background(Brush.linearGradient(listOf(gradientStart, gradientEnd)))
                 .clickable {
                     if (isUpdating) {
                         Toast.makeText(context, updating, Toast.LENGTH_SHORT).show()
@@ -309,132 +320,149 @@ fun StatusCard(
                     }
                     onClick(isRunning)
                 }
+                .padding(22.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+            // Status pill row
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.Top
+                    modifier = Modifier
+                        .background(contentColor.copy(alpha = 0.14f), RoundedCornerShape(percent = 50))
+                        .padding(horizontal = 10.dp, vertical = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(10.dp)
-                                    .background(accentColor, CircleShape)
-                            )
-                            Text(
-                                text = when {
-                                    isUpdating -> stringResource(R.string.updating)
-                                    isNeedExtraStep -> stringResource(R.string.home_need_fix)
-                                    isRunning -> stringResource(R.string.home_running)
-                                    else -> stringResource(R.string.home_not_running)
-                                },
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.SemiBold,
-                                color = contentColor
-                            )
-                            if (isRunning) {
-                                ExtraLabel(
-                                    text = axeronInfo.serverInfo.getMode().label,
-                                    style = ExtraLabelDefaults.style.copy(allCaps = false)
-                                )
-                            }
-                        }
-
-                        Text(
-                            text = when {
-                                isUpdating -> stringResource(R.string.server_updating_version)
-                                    .format(axeronInfo.getVersionCode(), VERSION_CODE)
-                                isNeedExtraStep -> stringResource(R.string.home_need_fix_msg)
-                                isRunning -> stringResource(R.string.version_pid)
-                                    .format(axeronInfo.getVersionCode(), axeronInfo.serverInfo.pid)
-                                else -> stringResource(R.string.home_not_running_msg)
-                            },
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = contentColor.copy(alpha = 0.8f)
-                        )
-                    }
-
                     Box(
                         modifier = Modifier
-                            .size(52.dp)
-                            .background(
-                                contentColor.copy(alpha = 0.12f),
-                                RoundedCornerShape(16.dp)
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        when {
-                            isUpdating -> Icon(
-                                imageVector = Icons.Outlined.Update,
-                                contentDescription = null,
-                                tint = contentColor,
-                                modifier = Modifier.size(28.dp)
-                            )
-                            isNeedExtraStep -> Icon(
-                                imageVector = Icons.Outlined.Build,
-                                contentDescription = null,
-                                tint = contentColor,
-                                modifier = Modifier.size(28.dp)
-                            )
-                            isRunning -> Icon(
-                                painter = painterResource(R.drawable.ic_axeron),
-                                contentDescription = null,
-                                tint = contentColor,
-                                modifier = Modifier.size(28.dp)
-                            )
-                            else -> Icon(
-                                imageVector = Icons.Outlined.Cancel,
-                                contentDescription = null,
-                                tint = contentColor,
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
+                            .size(7.dp)
+                            .background(accentColor, CircleShape)
+                    )
+                    Text(
+                        text = when {
+                            isUpdating -> stringResource(R.string.updating)
+                            isNeedExtraStep -> stringResource(R.string.home_need_fix)
+                            isRunning -> stringResource(R.string.home_running)
+                            else -> stringResource(R.string.home_not_running)
+                        },
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = contentColor
+                    )
+                }
+                if (isRunning) {
+                    ExtraLabel(
+                        text = axeronInfo.serverInfo.getMode().label,
+                        style = ExtraLabelDefaults.style.copy(allCaps = false)
+                    )
+                }
+            }
+
+            // Title + subtitle + big icon
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = when {
+                            isUpdating -> stringResource(R.string.updating)
+                            isNeedExtraStep -> stringResource(R.string.home_need_fix)
+                            isRunning -> stringResource(R.string.home_running)
+                            else -> stringResource(R.string.home_not_running)
+                        },
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = contentColor
+                    )
+                    Text(
+                        text = when {
+                            isUpdating -> stringResource(R.string.server_updating_version)
+                                .format(axeronInfo.getVersionCode(), VERSION_CODE)
+                            isNeedExtraStep -> stringResource(R.string.home_need_fix_msg)
+                            isRunning -> stringResource(R.string.version_pid)
+                                .format(axeronInfo.getVersionCode(), axeronInfo.serverInfo.pid)
+                            else -> stringResource(R.string.home_not_running_msg)
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = contentColor.copy(alpha = 0.78f)
+                    )
+                }
+                Spacer(Modifier.width(16.dp))
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .background(contentColor.copy(alpha = 0.14f), RoundedCornerShape(20.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    when {
+                        isUpdating -> Icon(
+                            imageVector = Icons.Outlined.Update,
+                            contentDescription = null,
+                            tint = contentColor,
+                            modifier = Modifier.size(30.dp)
+                        )
+                        isNeedExtraStep -> Icon(
+                            imageVector = Icons.Outlined.Build,
+                            contentDescription = null,
+                            tint = contentColor,
+                            modifier = Modifier.size(30.dp)
+                        )
+                        isRunning -> Icon(
+                            painter = painterResource(R.drawable.ic_axeron),
+                            contentDescription = null,
+                            tint = contentColor,
+                            modifier = Modifier.size(30.dp)
+                        )
+                        else -> Icon(
+                            imageVector = Icons.Outlined.Cancel,
+                            contentDescription = null,
+                            tint = contentColor,
+                            modifier = Modifier.size(30.dp)
+                        )
                     }
                 }
+            }
 
-                if (isRunning) {
-                    var time by remember { mutableLongStateOf(0) }
-                    LaunchedEffect(Unit) {
-                        while (true) {
-                            time = SystemClock.elapsedRealtime() - axeronInfo.serverInfo.starting
-                            delay(1000)
-                        }
+            // Uptime pill (running only)
+            if (isRunning) {
+                var time by remember { mutableLongStateOf(0) }
+                LaunchedEffect(Unit) {
+                    while (true) {
+                        time = SystemClock.elapsedRealtime() - axeronInfo.serverInfo.starting
+                        delay(1000)
                     }
-                    val daySingular = stringResource(R.string.day_singular)
-                    val dayPlural = stringResource(R.string.day_plural)
+                }
+                val daySingular = stringResource(R.string.day_singular)
+                val dayPlural = stringResource(R.string.day_plural)
 
-                    fun formatUptime(millis: Long): String {
-                        val totalSeconds = millis / 1000
-                        val days = totalSeconds / 86400
-                        val hours = (totalSeconds % 86400) / 3600
-                        val minutes = (totalSeconds % 3600) / 60
-                        val seconds = totalSeconds % 60
-                        val dayPart = when {
-                            days == 1L -> "1 $daySingular "
-                            days > 1 -> "$days $dayPlural "
-                            else -> ""
-                        }
-                        return "T+$dayPart%02d:%02d:%02d".format(hours, minutes, seconds)
+                fun formatUptime(millis: Long): String {
+                    val totalSeconds = millis / 1000
+                    val days = totalSeconds / 86400
+                    val hours = (totalSeconds % 86400) / 3600
+                    val minutes = (totalSeconds % 3600) / 60
+                    val seconds = totalSeconds % 60
+                    val dayPart = when {
+                        days == 1L -> "1 $daySingular "
+                        days > 1 -> "$days $dayPlural "
+                        else -> ""
                     }
+                    return "T+$dayPart%02d:%02d:%02d".format(hours, minutes, seconds)
+                }
 
+                Box(
+                    modifier = Modifier
+                        .background(contentColor.copy(alpha = 0.14f), RoundedCornerShape(percent = 50))
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                ) {
                     Text(
                         text = formatUptime(time),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = contentColor.copy(alpha = 0.8f),
+                        style = MaterialTheme.typography.labelLarge,
                         fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.Medium
+                        color = contentColor,
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
             }
@@ -489,15 +517,15 @@ fun WarningCard(
     color: Color = MaterialTheme.colorScheme.error,
     onClick: (() -> Unit)? = null
 ) {
-    ElevatedCard(
+    Card(
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.elevatedCardColors(containerColor = color)
+        colors = CardDefaults.cardColors(containerColor = color)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .then(onClick?.let { Modifier.clickable { it() } } ?: Modifier)
-                .padding(24.dp)
+                .padding(20.dp)
         ) {
             Text(text = message, style = MaterialTheme.typography.bodyMedium)
         }
@@ -518,8 +546,8 @@ fun InfoCard(activateViewModel: ActivateViewModel) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+                .padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             @Composable
             fun InfoRow(label: String, content: String, icon: Any? = null) {
@@ -530,10 +558,10 @@ fun InfoCard(activateViewModel: ActivateViewModel) {
                     if (icon != null) {
                         Box(
                             modifier = Modifier
-                                .size(40.dp)
+                                .size(42.dp)
                                 .background(
                                     MaterialTheme.colorScheme.primaryContainer,
-                                    RoundedCornerShape(12.dp)
+                                    RoundedCornerShape(13.dp)
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
@@ -557,9 +585,11 @@ fun InfoCard(activateViewModel: ActivateViewModel) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = label,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium
                         )
+                        Spacer(Modifier.height(2.dp))
                         Text(
                             text = content,
                             style = MaterialTheme.typography.bodyMedium,
@@ -608,9 +638,9 @@ fun LearnCard() {
         ) {
             Box(
                 modifier = Modifier
-                    .size(44.dp)
+                    .size(46.dp)
                     .background(
-                        MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.12f),
+                        MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.14f),
                         RoundedCornerShape(14.dp)
                     ),
                 contentAlignment = Alignment.Center
@@ -657,7 +687,7 @@ fun IssueReportCard() {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Text(
                 text = stringResource(R.string.report_issue),
@@ -674,15 +704,16 @@ fun IssueReportCard() {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 IconButton(
                     onClick = { uriHandler.openUri(githubIssueUrl) },
                     modifier = Modifier
                         .background(
                             MaterialTheme.colorScheme.primaryContainer,
-                            RoundedCornerShape(12.dp)
+                            RoundedCornerShape(14.dp)
                         )
+                        .size(46.dp)
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_github),
@@ -695,8 +726,9 @@ fun IssueReportCard() {
                     modifier = Modifier
                         .background(
                             MaterialTheme.colorScheme.primaryContainer,
-                            RoundedCornerShape(12.dp)
+                            RoundedCornerShape(14.dp)
                         )
+                        .size(46.dp)
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_telegram),
