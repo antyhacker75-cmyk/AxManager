@@ -10,20 +10,20 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
@@ -60,7 +60,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -71,7 +70,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
@@ -117,22 +115,35 @@ fun HomeScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGloba
         topBar = {
             TopAppBar(
                 title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(42.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.primaryContainer,
+                                    RoundedCornerShape(14.dp)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_axeron),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+                        Spacer(Modifier.width(12.dp))
                         Column {
                             Text(
-                                modifier = Modifier.padding(start = 10.dp),
                                 text = stringResource(R.string.app_name),
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.SemiBold,
                             )
                             Text(
-                                modifier = Modifier.padding(start = 10.dp),
                                 text = "v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = FontWeight.Medium,
                             )
                         }
                     }
@@ -151,7 +162,6 @@ fun HomeScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGloba
                                     val success = loadingDialog.withLoading {
                                         AxeronPluginService.igniteSuspendService()
                                     }
-
                                     if (success) {
                                         pluginViewModel.fetchModuleList()
                                     }
@@ -182,7 +192,6 @@ fun HomeScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGloba
                                 contentDescription = "Shutdown"
                             )
                         }
-
                     }
                     Spacer(modifier = Modifier.padding(end = 12.dp))
                 },
@@ -192,9 +201,8 @@ fun HomeScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGloba
         floatingActionButton = {
             AnimatedVisibility(visible = isRunning) {
                 FloatingActionButton(
-                    onClick = {
-                        navigator.navigate(QuickShellScreenDestination)
-                    }
+                    onClick = { navigator.navigate(QuickShellScreenDestination) },
+                    shape = RoundedCornerShape(18.dp)
                 ) {
                     Icon(Icons.Filled.Terminal, null)
                 }
@@ -211,112 +219,21 @@ fun HomeScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGloba
                 .padding(bottom = 120.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            StatusCard(
-                activateViewModel = activateViewModel
-            ) {
-                if (!it) {
-                    navigator.navigate(ActivateScreenDestination)
-                }
+            StatusCard(activateViewModel = activateViewModel) {
+                if (!it) navigator.navigate(ActivateScreenDestination)
             }
+
             AnimatedVisibility(visible = isRunning) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    PluginCard(
-                        Modifier.weight(1f),
-                        pluginViewModel
-                    )
-                    PrivilegeCard(
-                        Modifier.weight(1f),
-                        privilegeViewModel
-                    )
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    PluginCard(Modifier.weight(1f), pluginViewModel)
+                    PrivilegeCard(Modifier.weight(1f), privilegeViewModel)
                 }
             }
 
             UpdateCard()
             InfoCard(activateViewModel)
-
-          //  SupportCard()
             LearnCard()
             IssueReportCard()
-        }
-    }
-}
-
-/*@Composable
-fun SupportCard() {
-    val uriHandler = LocalUriHandler.current
-    val githubFahrez182 = "https://github.com/antyhacker75-cmyk/AxManager"
-
-    ElevatedCard(
-        onClick = {
-            uriHandler.openUri(githubFahrez182)
-        }
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.support_me),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = stringResource(R.string.support_me_msg),
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                )
-            }
-            Icon(
-                modifier = Modifier.padding(end = 10.dp, start = 24.dp),
-                imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
-                contentDescription = "Support to github",
-            )
-        }
-    }
-}*/
-
-@Composable
-fun LearnCard() {
-    val uriHandler = LocalUriHandler.current
-    val learnAxManager = "https://github.com/antyhacker75-cmyk/AxManager"
-
-    ElevatedCard(
-        onClick = {
-            uriHandler.openUri(learnAxManager)
-        }
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.learn_more),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = stringResource(R.string.learn_more_msg),
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                )
-            }
-            Icon(
-                modifier = Modifier.padding(end = 10.dp, start = 24.dp),
-                imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
-                contentDescription = "Support to github",
-            )
         }
     }
 }
@@ -336,17 +253,28 @@ fun StatusCard(
     val extraStepUrl =
         "https://antyhacker75-cmyk.github.io/AxManager/guide/faq.html#start-via-wireless-debugging-start-by-connecting-to-a-computer-the-permission-of-adb-is-limited"
 
-    ElevatedCard(
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = run {
-                when {
-                    isUpdating -> MaterialTheme.colorScheme.primaryContainer
-                    isNeedExtraStep -> MaterialTheme.colorScheme.errorContainer
-                    isRunning -> MaterialTheme.colorScheme.primaryContainer
-                    else -> MaterialTheme.colorScheme.errorContainer
-                }
-            }
-        ),
+    val containerColor = when {
+        isUpdating -> MaterialTheme.colorScheme.primaryContainer
+        isNeedExtraStep -> MaterialTheme.colorScheme.errorContainer
+        isRunning -> MaterialTheme.colorScheme.primaryContainer
+        else -> MaterialTheme.colorScheme.errorContainer
+    }
+    val contentColor = when {
+        isUpdating -> MaterialTheme.colorScheme.onPrimaryContainer
+        isNeedExtraStep -> MaterialTheme.colorScheme.onErrorContainer
+        isRunning -> MaterialTheme.colorScheme.onPrimaryContainer
+        else -> MaterialTheme.colorScheme.onErrorContainer
+    }
+    val accentColor = when {
+        isUpdating -> MaterialTheme.colorScheme.primary
+        isNeedExtraStep -> MaterialTheme.colorScheme.error
+        isRunning -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.error
+    }
+
+    Card(
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
         modifier = Modifier
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
@@ -382,239 +310,132 @@ fun StatusCard(
                     onClick(isRunning)
                 }
         ) {
-            val isDark = isSystemInDarkTheme()
-            val colorScheme = MaterialTheme.colorScheme
-            val fadeColor = when {
-                isDark -> colorScheme.surfaceVariant
-                else -> colorScheme.surfaceVariant
-            }
-
-            when {
-                isUpdating -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .offset(20.dp, 30.dp),
-                        contentAlignment = Alignment.BottomEnd
-                    ) {
-                        Icon(
-                            modifier = Modifier.size(145.dp),
-                            imageVector = Icons.Outlined.Update,
-                            contentDescription = null
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        fadeColor.copy(alpha = 0.0f),
-                                        fadeColor.copy(alpha = 0.55f)
-                                    ),
-                                    startY = 0f,
-                                    endY = Float.POSITIVE_INFINITY
-                                )
-                            )
-                    )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.Top
+                ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        val serverUpdatingVersion = stringResource(R.string.server_updating_version)
-                        Text(
-                            text = updating,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Text(
-                            text = serverUpdatingVersion.format(axeronInfo.getVersionCode(), VERSION_CODE),
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                }
-
-                isNeedExtraStep -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .offset(40.dp, 40.dp),
-                        contentAlignment = Alignment.BottomEnd
-                    ) {
-                        Icon(
-                            modifier = Modifier.size(145.dp),
-                            imageVector = Icons.Outlined.Build,
-                            contentDescription = null
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        fadeColor.copy(alpha = 0.0f),
-                                        fadeColor.copy(alpha = 0.55f)
-                                    ),
-                                    startY = 0f,
-                                    endY = Float.POSITIVE_INFINITY
-                                )
-                            )
-                    )
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.home_need_fix),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Text(
-                            text = stringResource(R.string.home_need_fix_msg),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
-
-                isRunning -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .offset(10.dp, 30.dp),
-                        contentAlignment = Alignment.BottomEnd
-                    ) {
-                        Icon(
-                            modifier = Modifier.size(145.dp),
-                            painter = painterResource(R.drawable.ic_axeron),
-                            contentDescription = null
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        fadeColor.copy(alpha = 0.0f),
-                                        fadeColor.copy(alpha = 0.55f)
-                                    ),
-                                    startY = 0f,
-                                    endY = Float.POSITIVE_INFINITY
-                                )
-                            )
-                    )
-                    Column(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .padding(16.dp)
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .background(accentColor, CircleShape)
+                            )
                             Text(
-                                text = stringResource(id = R.string.home_running),
+                                text = when {
+                                    isUpdating -> stringResource(R.string.updating)
+                                    isNeedExtraStep -> stringResource(R.string.home_need_fix)
+                                    isRunning -> stringResource(R.string.home_running)
+                                    else -> stringResource(R.string.home_not_running)
+                                },
                                 style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
+                                color = contentColor
                             )
-                            ExtraLabel(
-                                text = axeronInfo.serverInfo.getMode().label,
-                                style = ExtraLabelDefaults.style.copy(
-                                    allCaps = false
+                            if (isRunning) {
+                                ExtraLabel(
+                                    text = axeronInfo.serverInfo.getMode().label,
+                                    style = ExtraLabelDefaults.style.copy(allCaps = false)
                                 )
+                            }
+                        }
+
+                        Text(
+                            text = when {
+                                isUpdating -> stringResource(R.string.server_updating_version)
+                                    .format(axeronInfo.getVersionCode(), VERSION_CODE)
+                                isNeedExtraStep -> stringResource(R.string.home_need_fix_msg)
+                                isRunning -> stringResource(R.string.version_pid)
+                                    .format(axeronInfo.getVersionCode(), axeronInfo.serverInfo.pid)
+                                else -> stringResource(R.string.home_not_running_msg)
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = contentColor.copy(alpha = 0.8f)
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .size(52.dp)
+                            .background(
+                                contentColor.copy(alpha = 0.12f),
+                                RoundedCornerShape(16.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        when {
+                            isUpdating -> Icon(
+                                imageVector = Icons.Outlined.Update,
+                                contentDescription = null,
+                                tint = contentColor,
+                                modifier = Modifier.size(28.dp)
+                            )
+                            isNeedExtraStep -> Icon(
+                                imageVector = Icons.Outlined.Build,
+                                contentDescription = null,
+                                tint = contentColor,
+                                modifier = Modifier.size(28.dp)
+                            )
+                            isRunning -> Icon(
+                                painter = painterResource(R.drawable.ic_axeron),
+                                contentDescription = null,
+                                tint = contentColor,
+                                modifier = Modifier.size(28.dp)
+                            )
+                            else -> Icon(
+                                imageVector = Icons.Outlined.Cancel,
+                                contentDescription = null,
+                                tint = contentColor,
+                                modifier = Modifier.size(28.dp)
                             )
                         }
-
-                        val versionPid = stringResource(R.string.version_pid)
-
-                        Text(
-                            text = versionPid.format(axeronInfo.getVersionCode(), axeronInfo.serverInfo.pid),
-                            style = MaterialTheme.typography.bodySmall
-                        )
-
-                        Spacer(Modifier.weight(1f))
-
-                        var time by remember { mutableLongStateOf(0) }
-
-                        LaunchedEffect(Unit) {
-                            while (true) {
-                                time =
-                                    SystemClock.elapsedRealtime() - axeronInfo.serverInfo.starting
-                                delay(1000)
-                            }
-                        }
-                        val daySingular = stringResource(R.string.day_singular)
-                        val dayPlural = stringResource(R.string.day_plural)
-
-                        fun formatUptime(millis: Long): String {
-                            val totalSeconds = millis / 1000
-                            val days = totalSeconds / 86400
-                            val hours = (totalSeconds % 86400) / 3600
-                            val minutes = (totalSeconds % 3600) / 60
-                            val seconds = totalSeconds % 60
-
-                            val dayPart = when {
-                                days == 1L -> "1 $daySingular "
-                                days > 1 -> "$days $dayPlural "
-                                else -> ""
-                            }
-
-                            return "T+$dayPart%02d:%02d:%02d".format(hours, minutes, seconds)
-                        }
-
-                        Text(
-                            text = formatUptime(time),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontFamily = FontFamily.Monospace
-                        )
                     }
                 }
 
-                else -> {
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .offset(20.dp, 30.dp),
-                        contentAlignment = Alignment.BottomEnd
-                    ) {
-                        Icon(
-                            modifier = Modifier.size(145.dp),
-                            imageVector = Icons.Outlined.Cancel,
-                            contentDescription = null
-                        )
+                if (isRunning) {
+                    var time by remember { mutableLongStateOf(0) }
+                    LaunchedEffect(Unit) {
+                        while (true) {
+                            time = SystemClock.elapsedRealtime() - axeronInfo.serverInfo.starting
+                            delay(1000)
+                        }
                     }
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        fadeColor.copy(alpha = 0.0f),
-                                        fadeColor.copy(alpha = 0.55f)
-                                    ),
-                                    startY = 0f,
-                                    endY = Float.POSITIVE_INFINITY
-                                )
-                            )
+                    val daySingular = stringResource(R.string.day_singular)
+                    val dayPlural = stringResource(R.string.day_plural)
+
+                    fun formatUptime(millis: Long): String {
+                        val totalSeconds = millis / 1000
+                        val days = totalSeconds / 86400
+                        val hours = (totalSeconds % 86400) / 3600
+                        val minutes = (totalSeconds % 3600) / 60
+                        val seconds = totalSeconds % 60
+                        val dayPart = when {
+                            days == 1L -> "1 $daySingular "
+                            days > 1 -> "$days $dayPlural "
+                            else -> ""
+                        }
+                        return "T+$dayPart%02d:%02d:%02d".format(hours, minutes, seconds)
+                    }
+
+                    Text(
+                        text = formatUptime(time),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = contentColor.copy(alpha = 0.8f),
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Medium
                     )
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.home_not_running),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Text(
-                            text = stringResource(R.string.home_not_running_msg),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-
                 }
             }
         }
@@ -625,9 +446,7 @@ fun StatusCard(
 fun UpdateCard() {
     val latestVersionInfo = LatestVersionInfo()
     val newVersion by produceState(initialValue = latestVersionInfo) {
-        value = withContext(Dispatchers.IO) {
-            checkNewVersion()
-        }
+        value = withContext(Dispatchers.IO) { checkNewVersion() }
     }
 
     val currentVersionCode = BuildConfig.VERSION_CODE
@@ -666,12 +485,13 @@ fun UpdateCard() {
 
 @Composable
 fun WarningCard(
-    message: String, color: Color = MaterialTheme.colorScheme.error, onClick: (() -> Unit)? = null
+    message: String,
+    color: Color = MaterialTheme.colorScheme.error,
+    onClick: (() -> Unit)? = null
 ) {
     ElevatedCard(
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = color
-        )
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.elevatedCardColors(containerColor = color)
     ) {
         Row(
             modifier = Modifier
@@ -679,9 +499,7 @@ fun WarningCard(
                 .then(onClick?.let { Modifier.clickable { it() } } ?: Modifier)
                 .padding(24.dp)
         ) {
-            Text(
-                text = message, style = MaterialTheme.typography.bodyMedium
-            )
+            Text(text = message, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
@@ -690,85 +508,138 @@ fun WarningCard(
 fun InfoCard(activateViewModel: ActivateViewModel) {
     val axeronInfo = activateViewModel.axeronInfo
 
-    ElevatedCard(
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 1.dp
+    Card(
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
         ),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(all = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             @Composable
-            fun InfoCardItem(label: String, content: String, icon: Any? = null) {
-                Card {
-                    Row(
-                        modifier = Modifier.padding(vertical = 8.dp, horizontal = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        if (icon != null) {
+            fun InfoRow(label: String, content: String, icon: Any? = null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (icon != null) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.primaryContainer,
+                                    RoundedCornerShape(12.dp)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
                             when (icon) {
                                 is ImageVector -> Icon(
                                     imageVector = icon,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     contentDescription = null,
-                                    modifier = Modifier
-                                        .padding(end = 22.dp)
-                                        .size(22.dp)
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(22.dp)
                                 )
-
                                 is Painter -> Icon(
                                     painter = icon,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     contentDescription = null,
-                                    modifier = Modifier
-                                        .padding(end = 22.dp)
-                                        .size(22.dp)
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(22.dp)
                                 )
                             }
                         }
+                        Spacer(Modifier.width(14.dp))
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = label,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Spacer(Modifier.weight(1f))
                         Text(
-                            modifier = Modifier.fillMaxWidth(),
                             text = content,
-                            style = MaterialTheme.typography.bodySmall,
-                            textAlign = TextAlign.End,
-                            fontWeight = FontWeight.Bold
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
                 }
             }
 
-            InfoCardItem(
+            InfoRow(
                 label = stringResource(R.string.android_version),
                 content = "${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})",
                 icon = Icons.Filled.Android,
             )
-
-            InfoCardItem(
+            InfoRow(
                 label = stringResource(R.string.abi_supported),
                 content = Build.SUPPORTED_ABIS.joinToString(", "),
                 icon = Icons.Filled.Memory,
             )
-
-            InfoCardItem(
+            InfoRow(
                 label = stringResource(R.string.selinux_context),
                 content = axeronInfo.serverInfo.selinuxContext,
                 icon = Icons.Filled.Security,
             )
-
         }
     }
 }
 
+@Composable
+fun LearnCard() {
+    val uriHandler = LocalUriHandler.current
+    val learnAxManager = "https://github.com/antyhacker75-cmyk/AxManager"
+
+    Card(
+        onClick = { uriHandler.openUri(learnAxManager) },
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(
+                        MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.12f),
+                        RoundedCornerShape(14.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Spacer(Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.learn_more),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = stringResource(R.string.learn_more_msg),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.75f)
+                )
+            }
+        }
+    }
+}
 
 @Composable
 fun IssueReportCard() {
@@ -776,45 +647,61 @@ fun IssueReportCard() {
     val githubIssueUrl = "https://github.com/antyhacker75-cmyk/AxManager/issues"
     val telegramUrl = "https://t.me/WashiWashi123"
 
-    ElevatedCard {
-        Row(
+    Card(
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+        )
+    ) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(24.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.report_issue),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = stringResource(R.string.report_issue_msg),
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = stringResource(R.string.report_issue_msg2),
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                )
-            }
+            Text(
+                text = stringResource(R.string.report_issue),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = stringResource(R.string.report_issue_msg),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = stringResource(R.string.report_issue_msg2),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(4.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                IconButton(onClick = { uriHandler.openUri(githubIssueUrl) }) {
+                IconButton(
+                    onClick = { uriHandler.openUri(githubIssueUrl) },
+                    modifier = Modifier
+                        .background(
+                            MaterialTheme.colorScheme.primaryContainer,
+                            RoundedCornerShape(12.dp)
+                        )
+                ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_github),
                         contentDescription = "Report to github",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 }
-                IconButton(onClick = { uriHandler.openUri(telegramUrl) }) {
+                IconButton(
+                    onClick = { uriHandler.openUri(telegramUrl) },
+                    modifier = Modifier
+                        .background(
+                            MaterialTheme.colorScheme.primaryContainer,
+                            RoundedCornerShape(12.dp)
+                        )
+                ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_telegram),
                         contentDescription = "Report to telegram",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 }
             }
