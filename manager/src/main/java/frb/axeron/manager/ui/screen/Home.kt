@@ -10,13 +10,17 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -36,6 +40,7 @@ import androidx.compose.material.icons.outlined.Cancel
 import androidx.compose.material.icons.outlined.Update
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -69,6 +74,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
@@ -114,37 +120,20 @@ fun HomeScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGloba
         topBar = {
             TopAppBar(
                 title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.primaryContainer,
-                                    RoundedCornerShape(13.dp)
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_axeron),
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                        Spacer(Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = stringResource(R.string.app_name),
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                            )
-                            Text(
-                                text = "v${BuildConfig.VERSION_NAME}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontWeight = FontWeight.Medium,
-                            )
-                        }
+                    Column {
+                        Text(
+                            modifier = Modifier.padding(start = 10.dp),
+                            text = stringResource(R.string.app_name),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            modifier = Modifier.padding(start = 10.dp),
+                            text = "v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium,
+                        )
                     }
                 },
                 actions = {
@@ -180,7 +169,7 @@ fun HomeScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGloba
 
                     AnimatedVisibility(visible = isRunning) {
                         IconButton(
-                            modifier = Modifier.padding(end = 4.dp),
+                            modifier = Modifier.padding(end = 2.dp),
                             onClick = { showDialog = true }
                         ) {
                             Icon(
@@ -189,7 +178,7 @@ fun HomeScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGloba
                             )
                         }
                     }
-                    Spacer(modifier = Modifier.padding(end = 8.dp))
+                    Spacer(modifier = Modifier.padding(end = 12.dp))
                 },
                 scrollBehavior = scrollBehavior,
             )
@@ -198,7 +187,7 @@ fun HomeScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGloba
             AnimatedVisibility(visible = isRunning) {
                 FloatingActionButton(
                     onClick = { navigator.navigate(QuickShellScreenDestination) },
-                    shape = RoundedCornerShape(18.dp)
+                    shape = RoundedCornerShape(20.dp)
                 ) {
                     Icon(Icons.Filled.Terminal, null)
                 }
@@ -211,7 +200,7 @@ fun HomeScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGloba
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
-                .padding(top = 8.dp)
+                .padding(top = 12.dp)
                 .padding(bottom = 120.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
@@ -220,32 +209,18 @@ fun HomeScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGloba
             }
 
             AnimatedVisibility(visible = isRunning) {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                     PluginCard(Modifier.weight(1f), pluginViewModel)
                     PrivilegeCard(Modifier.weight(1f), privilegeViewModel)
                 }
             }
 
             UpdateCard()
-
-            SectionLabel("System")
             InfoCard(activateViewModel)
-
             LearnCard()
             IssueReportCard()
         }
     }
-}
-
-@Composable
-private fun SectionLabel(text: String) {
-    Text(
-        text = text.uppercase(),
-        style = MaterialTheme.typography.labelSmall,
-        fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(start = 10.dp, top = 4.dp)
-    )
 }
 
 @Composable
@@ -263,41 +238,31 @@ fun StatusCard(
     val extraStepUrl =
         "https://antyhacker75-cmyk.github.io/AxManager/guide/faq.html#start-via-wireless-debugging-start-by-connecting-to-a-computer-the-permission-of-adb-is-limited"
 
-    val gradientStart = when {
-        isUpdating -> MaterialTheme.colorScheme.primaryContainer
-        isNeedExtraStep -> MaterialTheme.colorScheme.errorContainer
-        isRunning -> MaterialTheme.colorScheme.primaryContainer
-        else -> MaterialTheme.colorScheme.errorContainer
-    }
-    val gradientEnd = when {
-        isUpdating -> MaterialTheme.colorScheme.tertiaryContainer
-        isNeedExtraStep -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.7f)
-        isRunning -> MaterialTheme.colorScheme.tertiaryContainer
-        else -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.7f)
-    }
-    val contentColor = when {
-        isNeedExtraStep -> MaterialTheme.colorScheme.onErrorContainer
-        else -> MaterialTheme.colorScheme.onPrimaryContainer
-    }
-    val accentColor = when {
-        isNeedExtraStep -> MaterialTheme.colorScheme.error
-        else -> MaterialTheme.colorScheme.primary
-    }
-
-    Card(
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        modifier = Modifier.fillMaxWidth()
+    ElevatedCard(
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = run {
+                when {
+                    isUpdating -> MaterialTheme.colorScheme.primaryContainer
+                    isNeedExtraStep -> MaterialTheme.colorScheme.errorContainer
+                    isRunning -> MaterialTheme.colorScheme.primaryContainer
+                    else -> MaterialTheme.colorScheme.errorContainer
+                }
+            }
+        ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min)
     ) {
         val scope = rememberCoroutineScope()
         val updating = stringResource(R.string.updating)
         var debugClickCount by remember { mutableIntStateOf(0) }
         var debugJob: Job? by remember { mutableStateOf(null) }
 
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Brush.linearGradient(listOf(gradientStart, gradientEnd)))
                 .clickable {
                     if (isUpdating) {
                         Toast.makeText(context, updating, Toast.LENGTH_SHORT).show()
@@ -320,147 +285,229 @@ fun StatusCard(
                     }
                     onClick(isRunning)
                 }
-                .padding(22.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .background(contentColor.copy(alpha = 0.14f), RoundedCornerShape(percent = 50))
-                        .padding(horizontal = 10.dp, vertical = 5.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
+            val isDark = isSystemInDarkTheme()
+            val colorScheme = MaterialTheme.colorScheme
+            val fadeColor = if (isDark) colorScheme.surfaceVariant else colorScheme.surfaceVariant
+
+            when {
+                isUpdating -> {
                     Box(
                         modifier = Modifier
-                            .size(7.dp)
-                            .background(accentColor, CircleShape)
-                    )
-                    Text(
-                        text = when {
-                            isUpdating -> stringResource(R.string.updating)
-                            isNeedExtraStep -> stringResource(R.string.home_need_fix)
-                            isRunning -> stringResource(R.string.home_running)
-                            else -> stringResource(R.string.home_not_running)
-                        },
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = contentColor
-                    )
-                }
-                if (isRunning) {
-                    ExtraLabel(
-                        text = axeronInfo.serverInfo.getMode().label,
-                        style = ExtraLabelDefaults.style.copy(allCaps = false)
-                    )
-                }
-            }
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(
-                        text = when {
-                            isUpdating -> stringResource(R.string.updating)
-                            isNeedExtraStep -> stringResource(R.string.home_need_fix)
-                            isRunning -> stringResource(R.string.home_running)
-                            else -> stringResource(R.string.home_not_running)
-                        },
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = contentColor
-                    )
-                    Text(
-                        text = when {
-                            isUpdating -> stringResource(R.string.server_updating_version)
-                                .format(axeronInfo.getVersionCode(), VERSION_CODE)
-                            isNeedExtraStep -> stringResource(R.string.home_need_fix_msg)
-                            isRunning -> stringResource(R.string.version_pid)
-                                .format(axeronInfo.getVersionCode(), axeronInfo.serverInfo.pid)
-                            else -> stringResource(R.string.home_not_running_msg)
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = contentColor.copy(alpha = 0.78f)
-                    )
-                }
-                Spacer(Modifier.width(16.dp))
-                Box(
-                    modifier = Modifier
-                        .size(64.dp)
-                        .background(contentColor.copy(alpha = 0.14f), RoundedCornerShape(20.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    when {
-                        isUpdating -> Icon(
+                            .fillMaxSize()
+                            .offset(20.dp, 30.dp),
+                        contentAlignment = Alignment.BottomEnd
+                    ) {
+                        Icon(
+                            modifier = Modifier.size(145.dp),
                             imageVector = Icons.Outlined.Update,
-                            contentDescription = null,
-                            tint = contentColor,
-                            modifier = Modifier.size(30.dp)
-                        )
-                        isNeedExtraStep -> Icon(
-                            imageVector = Icons.Outlined.Build,
-                            contentDescription = null,
-                            tint = contentColor,
-                            modifier = Modifier.size(30.dp)
-                        )
-                        isRunning -> Icon(
-                            painter = painterResource(R.drawable.ic_axeron),
-                            contentDescription = null,
-                            tint = contentColor,
-                            modifier = Modifier.size(30.dp)
-                        )
-                        else -> Icon(
-                            imageVector = Icons.Outlined.Cancel,
-                            contentDescription = null,
-                            tint = contentColor,
-                            modifier = Modifier.size(30.dp)
+                            contentDescription = null
                         )
                     }
-                }
-            }
-
-            if (isRunning) {
-                var time by remember { mutableLongStateOf(0) }
-                LaunchedEffect(Unit) {
-                    while (true) {
-                        time = SystemClock.elapsedRealtime() - axeronInfo.serverInfo.starting
-                        delay(1000)
-                    }
-                }
-                val daySingular = stringResource(R.string.day_singular)
-                val dayPlural = stringResource(R.string.day_plural)
-
-                fun formatUptime(millis: Long): String {
-                    val totalSeconds = millis / 1000
-                    val days = totalSeconds / 86400
-                    val hours = (totalSeconds % 86400) / 3600
-                    val minutes = (totalSeconds % 3600) / 60
-                    val seconds = totalSeconds % 60
-                    val dayPart = when {
-                        days == 1L -> "1 $daySingular "
-                        days > 1 -> "$days $dayPlural "
-                        else -> ""
-                    }
-                    return "T+$dayPart%02d:%02d:%02d".format(hours, minutes, seconds)
-                }
-
-                Box(
-                    modifier = Modifier
-                        .background(contentColor.copy(alpha = 0.14f), RoundedCornerShape(percent = 50))
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                ) {
-                    Text(
-                        text = formatUptime(time),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontFamily = FontFamily.Monospace,
-                        color = contentColor,
-                        fontWeight = FontWeight.SemiBold
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        fadeColor.copy(alpha = 0.0f),
+                                        fadeColor.copy(alpha = 0.55f)
+                                    ),
+                                    startY = 0f,
+                                    endY = Float.POSITIVE_INFINITY
+                                )
+                            )
                     )
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = updating,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = stringResource(R.string.server_updating_version)
+                                .format(axeronInfo.getVersionCode(), VERSION_CODE),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+
+                isNeedExtraStep -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .offset(40.dp, 40.dp),
+                        contentAlignment = Alignment.BottomEnd
+                    ) {
+                        Icon(
+                            modifier = Modifier.size(145.dp),
+                            imageVector = Icons.Outlined.Build,
+                            contentDescription = null
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        fadeColor.copy(alpha = 0.0f),
+                                        fadeColor.copy(alpha = 0.55f)
+                                    ),
+                                    startY = 0f,
+                                    endY = Float.POSITIVE_INFINITY
+                                )
+                            )
+                    )
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.home_need_fix),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = stringResource(R.string.home_need_fix_msg),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+
+                isRunning -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .offset(10.dp, 30.dp),
+                        contentAlignment = Alignment.BottomEnd
+                    ) {
+                        Icon(
+                            modifier = Modifier.size(145.dp),
+                            painter = painterResource(R.drawable.ic_axeron),
+                            contentDescription = null
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        fadeColor.copy(alpha = 0.0f),
+                                        fadeColor.copy(alpha = 0.55f)
+                                    ),
+                                    startY = 0f,
+                                    endY = Float.POSITIVE_INFINITY
+                                )
+                            )
+                    )
+                    Column(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .padding(20.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = stringResource(id = R.string.home_running),
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            ExtraLabel(
+                                text = axeronInfo.serverInfo.getMode().label,
+                                style = ExtraLabelDefaults.style.copy(allCaps = false)
+                            )
+                        }
+
+                        Text(
+                            text = stringResource(R.string.version_pid)
+                                .format(axeronInfo.getVersionCode(), axeronInfo.serverInfo.pid),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+
+                        Spacer(Modifier.weight(1f))
+
+                        var time by remember { mutableLongStateOf(0) }
+                        LaunchedEffect(Unit) {
+                            while (true) {
+                                time = SystemClock.elapsedRealtime() - axeronInfo.serverInfo.starting
+                                delay(1000)
+                            }
+                        }
+                        val daySingular = stringResource(R.string.day_singular)
+                        val dayPlural = stringResource(R.string.day_plural)
+
+                        fun formatUptime(millis: Long): String {
+                            val totalSeconds = millis / 1000
+                            val days = totalSeconds / 86400
+                            val hours = (totalSeconds % 86400) / 3600
+                            val minutes = (totalSeconds % 3600) / 60
+                            val seconds = totalSeconds % 60
+                            val dayPart = when {
+                                days == 1L -> "1 $daySingular "
+                                days > 1 -> "$days $dayPlural "
+                                else -> ""
+                            }
+                            return "T+$dayPart%02d:%02d:%02d".format(hours, minutes, seconds)
+                        }
+
+                        Text(
+                            text = formatUptime(time),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+
+                else -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .offset(20.dp, 30.dp),
+                        contentAlignment = Alignment.BottomEnd
+                    ) {
+                        Icon(
+                            modifier = Modifier.size(145.dp),
+                            imageVector = Icons.Outlined.Cancel,
+                            contentDescription = null
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        fadeColor.copy(alpha = 0.0f),
+                                        fadeColor.copy(alpha = 0.55f)
+                                    ),
+                                    startY = 0f,
+                                    endY = Float.POSITIVE_INFINITY
+                                )
+                            )
+                    )
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.home_not_running),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = stringResource(R.string.home_not_running_msg),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
                 }
             }
         }
@@ -514,9 +561,10 @@ fun WarningCard(
     color: Color = MaterialTheme.colorScheme.error,
     onClick: (() -> Unit)? = null
 ) {
-    Card(
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = color)
+    ElevatedCard(
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.elevatedCardColors(containerColor = color),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
@@ -533,66 +581,59 @@ fun WarningCard(
 fun InfoCard(activateViewModel: ActivateViewModel) {
     val axeronInfo = activateViewModel.axeronInfo
 
-    Card(
+    ElevatedCard(
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
         ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(vertical = 6.dp)
         ) {
             @Composable
             fun InfoRow(label: String, content: String, icon: Any? = null) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 14.dp, horizontal = 18.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (icon != null) {
-                        Box(
-                            modifier = Modifier
-                                .size(42.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.primaryContainer,
-                                    RoundedCornerShape(13.dp)
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            when (icon) {
-                                is ImageVector -> Icon(
-                                    imageVector = icon,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                                is Painter -> Icon(
-                                    painter = icon,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            }
+                        when (icon) {
+                            is ImageVector -> Icon(
+                                imageVector = icon,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .padding(end = 20.dp)
+                                    .size(22.dp)
+                            )
+                            is Painter -> Icon(
+                                painter = icon,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .padding(end = 20.dp)
+                                    .size(22.dp)
+                            )
                         }
-                        Spacer(Modifier.width(14.dp))
                     }
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = label,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Spacer(Modifier.height(2.dp))
-                        Text(
-                            text = content,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        text = content,
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.End,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
 
@@ -620,50 +661,39 @@ fun LearnCard() {
     val uriHandler = LocalUriHandler.current
     val learnAxManager = "https://github.com/antyhacker75-cmyk/AxManager"
 
-    Card(
-        onClick = { uriHandler.openUri(learnAxManager) },
+    ElevatedCard(
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
-        )
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+        ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp),
+        onClick = { uriHandler.openUri(learnAxManager) }
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
+                .padding(22.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(46.dp)
-                    .background(
-                        MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.14f),
-                        RoundedCornerShape(14.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-            Spacer(Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = stringResource(R.string.learn_more),
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                    fontWeight = FontWeight.Bold
                 )
-                Spacer(Modifier.height(2.dp))
+                Spacer(Modifier.height(4.dp))
                 Text(
                     text = stringResource(R.string.learn_more_msg),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.75f)
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 )
             }
+            Icon(
+                modifier = Modifier.padding(start = 24.dp),
+                imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
+                contentDescription = "Support to github",
+            )
         }
     }
 }
@@ -674,63 +704,51 @@ fun IssueReportCard() {
     val githubIssueUrl = "https://github.com/antyhacker75-cmyk/AxManager/issues"
     val telegramUrl = "https://t.me/WashiWashi123"
 
-    Card(
+    ElevatedCard(
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-        )
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+        ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp)
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+                .padding(22.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = stringResource(R.string.report_issue),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                text = stringResource(R.string.report_issue_msg),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = stringResource(R.string.report_issue_msg2),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                IconButton(
-                    onClick = { uriHandler.openUri(githubIssueUrl) },
-                    modifier = Modifier
-                        .background(
-                            MaterialTheme.colorScheme.primaryContainer,
-                            RoundedCornerShape(14.dp)
-                        )
-                        .size(46.dp)
-                ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.report_issue),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.report_issue_msg),
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = stringResource(R.string.report_issue_msg2),
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                IconButton(onClick = { uriHandler.openUri(githubIssueUrl) }) {
                     Icon(
                         painter = painterResource(R.drawable.ic_github),
                         contentDescription = "Report to github",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 }
-                IconButton(
-                    onClick = { uriHandler.openUri(telegramUrl) },
-                    modifier = Modifier
-                        .background(
-                            MaterialTheme.colorScheme.primaryContainer,
-                            RoundedCornerShape(14.dp)
-                        )
-                        .size(46.dp)
-                ) {
+                IconButton(onClick = { uriHandler.openUri(telegramUrl) }) {
                     Icon(
                         painter = painterResource(R.drawable.ic_telegram),
                         contentDescription = "Report to telegram",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 }
             }
