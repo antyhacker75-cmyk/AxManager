@@ -28,6 +28,7 @@ import frb.axeron.manager.ui.viewmodel.PluginViewModel
 import frb.axeron.manager.ui.viewmodel.SettingsViewModel
 import frb.axeron.server.PluginInfo
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.mutableStateMapOf
 
 @Composable
 fun PluginList(
