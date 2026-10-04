@@ -137,10 +137,6 @@ fun PluginConfig(
     }
 }
 
-/**
- * Loads a plugin asset (banner or icon).
- * Handles both http(s) URLs and local files inside the plugin directory.
- */
 @Composable
 private fun rememberPluginImage(pluginId: String, fileName: String): Any? {
     return remember(pluginId, fileName) {
@@ -271,9 +267,7 @@ fun PluginItem(
 
     val isActive = plugin.enabled && !plugin.remove
 
-    // -------- IMAGES --------
     val bannerModel = rememberPluginImage(plugin.prop.id, plugin.prop.banner)
-    val iconModel = rememberPluginImage(plugin.prop.id, plugin.prop.icon)
 
     val prefs = remember {
         context.getSharedPreferences("settings", Context.MODE_PRIVATE)
@@ -306,7 +300,6 @@ fun PluginItem(
                         alpha = 0.22f,
                         modifier = Modifier.matchParentSize()
                     )
-                    // Fade to surface at the bottom so description text stays readable
                     Box(
                         modifier = Modifier
                             .matchParentSize()
@@ -332,7 +325,7 @@ fun PluginItem(
                     verticalAlignment = Alignment.Top
                 ) {
 
-                    // -------- ICON TILE --------
+                    // -------- ICON TILE (banner cropped to square) --------
                     Box(
                         modifier = Modifier
                             .size(52.dp)
@@ -345,10 +338,10 @@ fun PluginItem(
                             ),
                         contentAlignment = Alignment.Center
                     ) {
-                        if (iconModel != null) {
+                        if (bannerModel != null) {
                             AsyncImage(
                                 model = ImageRequest.Builder(context)
-                                    .data(iconModel)
+                                    .data(bannerModel)
                                     .crossfade(true)
                                     .build(),
                                 contentDescription = plugin.prop.name,
