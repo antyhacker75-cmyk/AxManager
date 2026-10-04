@@ -1,5 +1,6 @@
 package frb.axeron.manager.ui.screen.plugin
 
+import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -63,14 +64,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.ramcosta.composedestinations.generated.destinations.ExecutePluginActionScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import frb.axeron.api.Axeron
 import frb.axeron.api.AxeronPluginService
 import frb.axeron.manager.R
 import frb.axeron.manager.ui.component.ConfirmResult
@@ -83,7 +88,10 @@ import frb.axeron.manager.ui.component.rememberLoadingDialog
 import frb.axeron.manager.ui.viewmodel.PluginViewModel
 import frb.axeron.manager.ui.viewmodel.SettingsViewModel
 import frb.axeron.server.PluginInfo
+import frb.axeron.shared.AxeronApiConstant
+import frb.axeron.shared.PathHelper
 import kotlinx.coroutines.launch
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -129,7 +137,32 @@ fun PluginConfig(
     }
 }
 
-/** Small pill badge — tight padding, small font. */
+/**
+ * Loads a plugin asset (banner or icon).
+ * Handles both http(s) URLs and local files inside the plugin directory.
+ */
+@Composable
+private fun rememberPluginImage(pluginId: String, fileName: String): Any? {
+    return remember(pluginId, fileName) {
+        if (fileName.isEmpty()) return@remember null
+        if (fileName.startsWith("http", true)) return@remember fileName
+        try {
+            val path = File(
+                PathHelper.getWorkingPath(
+                    Axeron.getAxeronInfo().isRoot(),
+                    AxeronApiConstant.folder.PARENT_PLUGIN
+                ),
+                pluginId
+            )
+            val file = File(path, fileName)
+            val stream = Axeron.newFileService().setFileInputStream(file.absolutePath)
+            stream?.use { it.readBytes() }
+        } catch (_: Exception) {
+            null
+        }
+    }
+}
+
 @Composable
 private fun TinyBadge(
     text: String,
@@ -165,7 +198,6 @@ private fun TinyBadge(
     }
 }
 
-/** Compact one-line info row: icon + "Label: value". */
 @Composable
 private fun InfoLine(
     icon: ImageVector,
@@ -218,9 +250,11 @@ fun PluginItem(
         showExtraSetDialog = false
     }
 
+    val context = LocalContext.current
     val primary = MaterialTheme.colorScheme.primary
     val onSurface = MaterialTheme.colorScheme.onSurface
     val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
+    val surface = MaterialTheme.colorScheme.surface
 
     val confirmDialog = rememberConfirmDialog()
     val reigniteLoading = rememberLoadingDialog()
@@ -236,13 +270,19 @@ fun PluginItem(
     val pluginUpdateJsonEmpty = stringResource(R.string.plugin_update_json_empty)
 
     val isActive = plugin.enabled && !plugin.remove
-    val initial = plugin.prop.name.firstOrNull()?.uppercase() ?: "?"
+
+    // -------- IMAGES --------
+    val bannerModel = rememberPluginImage(plugin.prop.id, plugin.prop.banner)
+    val iconModel = rememberPluginImage(plugin.prop.id, plugin.prop.icon)
+
+    val prefs = remember {
+        context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+    }
+    val useBanner = prefs.getBoolean("use_banner", true)
 
     Card(
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
+        colors = CardDefaults.cardColors(containerColor = surface),
         border = BorderStroke(
             width = 1.dp,
             color = primary.copy(alpha = if (isActive) 0.45f else 0.18f)
@@ -252,31 +292,47 @@ fun PluginItem(
             .combinedClickable(onClick = onExpandToggle)
     ) {
         Box {
-            // Soft glow from top-right corner
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .background(
-                        Brush.radialGradient(
-                            colors = listOf(
-                                primary.copy(alpha = if (isActive) 0.10f else 0.03f),
-                                Color.Transparent
-                            ),
-                            radius = 600f
-                        )
-                    )
-            )
 
+            // ===== BANNER BACKGROUND (faded) =====
+            if (useBanner && bannerModel != null) {
+                Box(modifier = Modifier.matchParentSize()) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(bannerModel)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        alpha = 0.22f,
+                        modifier = Modifier.matchParentSize()
+                    )
+                    // Fade to surface at the bottom so description text stays readable
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        surface.copy(alpha = 0.35f),
+                                        surface.copy(alpha = 0.90f)
+                                    ),
+                                    startY = 0f,
+                                    endY = Float.POSITIVE_INFINITY
+                                )
+                            )
+                    )
+                }
+            }
+
+            // ===== CONTENT =====
             Column(modifier = Modifier.padding(14.dp)) {
 
-                // ============ TOP ROW ============
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.Top
                 ) {
 
-                    // Icon tile — first letter, colored, no banner
+                    // -------- ICON TILE --------
                     Box(
                         modifier = Modifier
                             .size(52.dp)
@@ -289,20 +345,33 @@ fun PluginItem(
                             ),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = initial,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = primary
-                        )
+                        if (iconModel != null) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data(iconModel)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = plugin.prop.name,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .padding(4.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                            )
+                        } else {
+                            Text(
+                                text = plugin.prop.name.firstOrNull()?.uppercase() ?: "?",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = primary
+                            )
+                        }
                     }
 
                     Spacer(Modifier.width(12.dp))
 
-                    // Info column
+                    // -------- INFO COLUMN --------
                     Column(modifier = Modifier.weight(1f)) {
 
-                        // Badges — version + optional UPDATE/REMOVED only (no LOADED/DISABLED here)
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(5.dp)
@@ -359,7 +428,7 @@ fun PluginItem(
                         }
                     }
 
-                    // Right column — switch + small text (fixed width to prevent wrapping)
+                    // -------- SWITCH COLUMN --------
                     Column(
                         modifier = Modifier.width(72.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -402,7 +471,6 @@ fun PluginItem(
                     )
                 }
 
-                // ============ DESCRIPTION ============
                 if (plugin.prop.description.isNotEmpty()) {
                     Spacer(Modifier.height(10.dp))
                     Text(
@@ -416,7 +484,6 @@ fun PluginItem(
                     )
                 }
 
-                // ============ IGNITE PROMPT ============
                 if (plugin.update) {
                     Spacer(Modifier.height(8.dp))
                     val title = stringResource(R.string.what_is_ignite)
@@ -456,7 +523,6 @@ fun PluginItem(
                     }
                 }
 
-                // ============ EXPANDED ACTIONS ============
                 AnimatedVisibility(
                     visible = expanded,
                     enter = fadeIn() + expandVertically(),
