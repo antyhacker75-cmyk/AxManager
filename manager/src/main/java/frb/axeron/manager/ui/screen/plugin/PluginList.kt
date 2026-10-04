@@ -60,7 +60,8 @@ fun PluginList(
     onClickModule: (plugin: PluginInfo) -> Unit,
     context: Context,
     snackBarHost: SnackbarHostState,
-    listState: LazyListState
+    listState: LazyListState,
+    filter: Int = 0
 ) {
     val failedEnable = stringResource(R.string.failed_enable_plugin)
     val failedDisable = stringResource(R.string.failed_disable_plugin)
