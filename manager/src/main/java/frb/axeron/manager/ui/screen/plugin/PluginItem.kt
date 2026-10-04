@@ -2,6 +2,7 @@ package frb.axeron.manager.ui.screen.plugin
 
 import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -61,6 +62,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -202,7 +204,9 @@ private fun InfoLine(
     color: Color,
 ) {
     Row(
-        modifier = Modifier.padding(vertical = 1.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 1.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
@@ -219,8 +223,7 @@ private fun InfoLine(
             fontSize = 11.sp,
             lineHeight = 15.sp,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f, fill = false)
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
@@ -274,6 +277,11 @@ fun PluginItem(
     }
     val useBanner = prefs.getBoolean("use_banner", true)
 
+    val arrowRotation by animateFloatAsState(
+        targetValue = if (expanded) 90f else 0f,
+        label = "arrowRotation"
+    )
+
     Card(
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = surface),
@@ -287,7 +295,6 @@ fun PluginItem(
     ) {
         Box {
 
-            // ===== BANNER BACKGROUND (faded) =====
             if (useBanner && bannerModel != null) {
                 Box(modifier = Modifier.matchParentSize()) {
                     AsyncImage(
@@ -317,15 +324,14 @@ fun PluginItem(
                 }
             }
 
-            // ===== CONTENT =====
             Column(modifier = Modifier.padding(14.dp)) {
 
+                // ============ TOP ROW: ICON + TITLE + SWITCH + ARROW ============
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.Top
                 ) {
 
-                    // -------- ICON TILE (banner cropped to square) --------
                     Box(
                         modifier = Modifier
                             .size(52.dp)
@@ -362,7 +368,6 @@ fun PluginItem(
 
                     Spacer(Modifier.width(12.dp))
 
-                    // -------- INFO COLUMN --------
                     Column(modifier = Modifier.weight(1f)) {
 
                         Row(
@@ -402,26 +407,8 @@ fun PluginItem(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-
-                        Spacer(Modifier.height(4.dp))
-
-                        InfoLine(Icons.Default.DateRange, pluginVersion, plugin.prop.version, onSurfaceVariant)
-                        InfoLine(Icons.Default.Person, pluginAuthor, plugin.prop.author, onSurfaceVariant)
-
-                        if (settings.isDeveloperModeEnabled) {
-                            InfoLine(Icons.Default.Info, pluginId, plugin.prop.id, onSurfaceVariant)
-                            InfoLine(Icons.Default.Build, pluginVersionCode, plugin.prop.versionCode.toString(), onSurfaceVariant)
-                            InfoLine(Icons.Outlined.Tune, pluginAxeronSupport, plugin.prop.axeronPlugin.toString(), onSurfaceVariant)
-                            InfoLine(
-                                Icons.Outlined.Download,
-                                pluginUpdateJson,
-                                if (plugin.prop.updateJson.isNotEmpty()) plugin.prop.updateJson else pluginUpdateJsonEmpty,
-                                onSurfaceVariant
-                            )
-                        }
                     }
 
-                    // -------- SWITCH COLUMN --------
                     Column(
                         modifier = Modifier.width(72.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -461,9 +448,29 @@ fun PluginItem(
                         modifier = Modifier
                             .size(18.dp)
                             .align(Alignment.CenterVertically)
+                            .rotate(arrowRotation)
                     )
                 }
 
+                // ============ INFO LINES (full width, aligned with description) ============
+                Spacer(Modifier.height(8.dp))
+
+                InfoLine(Icons.Default.DateRange, pluginVersion, plugin.prop.version, onSurfaceVariant)
+                InfoLine(Icons.Default.Person, pluginAuthor, plugin.prop.author, onSurfaceVariant)
+
+                if (settings.isDeveloperModeEnabled) {
+                    InfoLine(Icons.Default.Info, pluginId, plugin.prop.id, onSurfaceVariant)
+                    InfoLine(Icons.Default.Build, pluginVersionCode, plugin.prop.versionCode.toString(), onSurfaceVariant)
+                    InfoLine(Icons.Outlined.Tune, pluginAxeronSupport, plugin.prop.axeronPlugin.toString(), onSurfaceVariant)
+                    InfoLine(
+                        Icons.Outlined.Download,
+                        pluginUpdateJson,
+                        if (plugin.prop.updateJson.isNotEmpty()) plugin.prop.updateJson else pluginUpdateJsonEmpty,
+                        onSurfaceVariant
+                    )
+                }
+
+                // ============ DESCRIPTION ============
                 if (plugin.prop.description.isNotEmpty()) {
                     Spacer(Modifier.height(10.dp))
                     Text(
