@@ -8,16 +8,15 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -37,10 +36,12 @@ import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.Cancel
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Update
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -48,7 +49,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
@@ -63,7 +63,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -76,6 +75,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.ActivateScreenDestination
@@ -87,8 +87,6 @@ import frb.axeron.api.AxeronPluginService
 import frb.axeron.api.core.Starter
 import frb.axeron.manager.BuildConfig
 import frb.axeron.manager.R
-import frb.axeron.manager.ui.component.ExtraLabel
-import frb.axeron.manager.ui.component.ExtraLabelDefaults
 import frb.axeron.manager.ui.component.PluginCard
 import frb.axeron.manager.ui.component.PowerDialog
 import frb.axeron.manager.ui.component.PrivilegeCard
@@ -105,6 +103,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+private val GreenOnline = Color(0xFF4ADE80)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Destination<RootGraph>(start = true)
 @Composable
@@ -116,78 +116,124 @@ fun HomeScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGloba
 
     val isRunning = activateViewModel.activateStatus is ActivateViewModel.ActivateStatus.Running
 
+    val loadingDialog = rememberLoadingDialog()
+    val scope = rememberCoroutineScope()
+    var showDialog by remember { mutableStateOf(false) }
+
+    if (showDialog) {
+        PowerDialog(
+            onDismiss = { showDialog = false },
+            onReignite = {
+                scope.launch {
+                    val success = loadingDialog.withLoading {
+                        AxeronPluginService.igniteSuspendService()
+                    }
+                    if (success) pluginViewModel.fetchModuleList()
+                }
+            },
+            onShutdown = { Axeron.destroy() },
+            onRestart = {
+                Axeron.newProcess(
+                    AxeronCommandSession.getQuickCmd(Starter.internalCommand, true, false),
+                    null,
+                    null
+                )
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(horizontal = 20.dp)
+                    .padding(top = 20.dp, bottom = 12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_axeron),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(46.dp)
+                    )
+                    Spacer(Modifier.width(14.dp))
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            modifier = Modifier.padding(start = 10.dp),
-                            text = stringResource(R.string.app_name),
+                            text = stringResource(R.string.app_name).uppercase(),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.5.sp,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            modifier = Modifier.padding(start = 10.dp),
-                            text = "v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            text = "SYSTEM SHELL",
+                            style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Medium,
-                        )
-                    }
-                },
-                actions = {
-                    val loadingDialog = rememberLoadingDialog()
-                    val scope = rememberCoroutineScope()
-                    var showDialog by remember { mutableStateOf(false) }
-
-                    if (showDialog) {
-                        PowerDialog(
-                            onDismiss = { showDialog = false },
-                            onReignite = {
-                                scope.launch {
-                                    val success = loadingDialog.withLoading {
-                                        AxeronPluginService.igniteSuspendService()
-                                    }
-                                    if (success) pluginViewModel.fetchModuleList()
-                                }
-                            },
-                            onShutdown = { Axeron.destroy() },
-                            onRestart = {
-                                Axeron.newProcess(
-                                    AxeronCommandSession.getQuickCmd(
-                                        Starter.internalCommand,
-                                        true,
-                                        false
-                                    ),
-                                    null,
-                                    null
-                                )
-                            }
+                            letterSpacing = 3.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 
                     AnimatedVisibility(visible = isRunning) {
-                        IconButton(
-                            modifier = Modifier.padding(end = 2.dp),
-                            onClick = { showDialog = true }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.PowerSettingsNew,
-                                contentDescription = "Shutdown"
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .background(GreenOnline, CircleShape)
+                            )
+                            Text(
+                                text = "ONLINE",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = GreenOnline,
+                                letterSpacing = 1.2.sp
                             )
                         }
                     }
-                    Spacer(modifier = Modifier.padding(end = 12.dp))
-                },
-                scrollBehavior = scrollBehavior,
-            )
+                    Spacer(Modifier.width(14.dp))
+                    AnimatedVisibility(visible = isRunning) {
+                        Box(
+                            modifier = Modifier
+                                .size(42.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
+                                    CircleShape
+                                )
+                                .clickable { showDialog = true },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PowerSettingsNew,
+                                contentDescription = "Shutdown",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    text = "v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Medium
+                )
+            }
         },
         floatingActionButton = {
             AnimatedVisibility(visible = isRunning) {
                 FloatingActionButton(
                     onClick = { navigator.navigate(QuickShellScreenDestination) },
-                    shape = RoundedCornerShape(20.dp)
+                    shape = RoundedCornerShape(18.dp),
+                    containerColor = MaterialTheme.colorScheme.primary
                 ) {
                     Icon(Icons.Filled.Terminal, null)
                 }
@@ -200,7 +246,7 @@ fun HomeScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGloba
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
-                .padding(top = 12.dp)
+                .padding(top = 8.dp)
                 .padding(bottom = 120.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
@@ -238,22 +284,25 @@ fun StatusCard(
     val extraStepUrl =
         "https://antyhacker75-cmyk.github.io/AxManager/guide/faq.html#start-via-wireless-debugging-start-by-connecting-to-a-computer-the-permission-of-adb-is-limited"
 
-    ElevatedCard(
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = run {
-                when {
-                    isUpdating -> MaterialTheme.colorScheme.primaryContainer
-                    isNeedExtraStep -> MaterialTheme.colorScheme.errorContainer
-                    isRunning -> MaterialTheme.colorScheme.primaryContainer
-                    else -> MaterialTheme.colorScheme.errorContainer
-                }
-            }
+    val primary = MaterialTheme.colorScheme.primary
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
+    val error = MaterialTheme.colorScheme.error
+    val accent = if (isNeedExtraStep) error else primary
+    val statusColor = when {
+        isNeedExtraStep -> error
+        isUpdating -> primary
+        isRunning -> GreenOnline
+        else -> error
+    }
+
+    Card(
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.22f)
         ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(IntrinsicSize.Min)
+        border = BorderStroke(1.dp, accent.copy(alpha = 0.35f)),
+        modifier = Modifier.fillMaxWidth()
     ) {
         val scope = rememberCoroutineScope()
         val updating = stringResource(R.string.updating)
@@ -286,153 +335,102 @@ fun StatusCard(
                     onClick(isRunning)
                 }
         ) {
-            val isDark = isSystemInDarkTheme()
-            val colorScheme = MaterialTheme.colorScheme
-            val fadeColor = if (isDark) colorScheme.surfaceVariant else colorScheme.surfaceVariant
+            // Watermark logo behind content
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp),
+                contentAlignment = Alignment.TopEnd
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_axeron),
+                    contentDescription = null,
+                    tint = accent.copy(alpha = 0.18f),
+                    modifier = Modifier
+                        .size(200.dp)
+                        .offset(x = 40.dp, y = (-30).dp)
+                )
+            }
 
-            when {
-                isUpdating -> {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // Status badge + mode pill
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
                     Box(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .offset(20.dp, 30.dp),
-                        contentAlignment = Alignment.BottomEnd
-                    ) {
-                        Icon(
-                            modifier = Modifier.size(145.dp),
-                            imageVector = Icons.Outlined.Update,
-                            contentDescription = null
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        fadeColor.copy(alpha = 0.0f),
-                                        fadeColor.copy(alpha = 0.55f)
-                                    ),
-                                    startY = 0f,
-                                    endY = Float.POSITIVE_INFINITY
-                                )
-                            )
+                            .size(9.dp)
+                            .background(statusColor, CircleShape)
                     )
-                    Column(
-                        modifier = Modifier.padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text(
-                            text = updating,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = stringResource(R.string.server_updating_version)
-                                .format(axeronInfo.getVersionCode(), VERSION_CODE),
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                }
-
-                isNeedExtraStep -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .offset(40.dp, 40.dp),
-                        contentAlignment = Alignment.BottomEnd
-                    ) {
-                        Icon(
-                            modifier = Modifier.size(145.dp),
-                            imageVector = Icons.Outlined.Build,
-                            contentDescription = null
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        fadeColor.copy(alpha = 0.0f),
-                                        fadeColor.copy(alpha = 0.55f)
-                                    ),
-                                    startY = 0f,
-                                    endY = Float.POSITIVE_INFINITY
-                                )
-                            )
+                    Text(
+                        text = when {
+                            isUpdating -> stringResource(R.string.updating).uppercase()
+                            isNeedExtraStep -> stringResource(R.string.home_need_fix).uppercase()
+                            isRunning -> stringResource(R.string.home_running).uppercase()
+                            else -> stringResource(R.string.home_not_running).uppercase()
+                        },
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = statusColor,
+                        letterSpacing = 1.8.sp
                     )
-                    Column(
-                        modifier = Modifier.padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.home_need_fix),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = stringResource(R.string.home_need_fix_msg),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
-
-                isRunning -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .offset(10.dp, 30.dp),
-                        contentAlignment = Alignment.BottomEnd
-                    ) {
-                        Icon(
-                            modifier = Modifier.size(145.dp),
-                            painter = painterResource(R.drawable.ic_axeron),
-                            contentDescription = null
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        fadeColor.copy(alpha = 0.0f),
-                                        fadeColor.copy(alpha = 0.55f)
-                                    ),
-                                    startY = 0f,
-                                    endY = Float.POSITIVE_INFINITY
-                                )
-                            )
-                    )
-                    Column(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .padding(20.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    if (isRunning) {
+                        Box(
+                            modifier = Modifier
+                                .border(1.dp, primary, RoundedCornerShape(percent = 50))
+                                .padding(horizontal = 12.dp, vertical = 3.dp)
                         ) {
                             Text(
-                                text = stringResource(id = R.string.home_running),
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
-                            )
-                            ExtraLabel(
-                                text = axeronInfo.serverInfo.getMode().label,
-                                style = ExtraLabelDefaults.style.copy(allCaps = false)
+                                text = axeronInfo.serverInfo.getMode().label.uppercase(),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = primary,
+                                letterSpacing = 1.5.sp
                             )
                         }
+                    }
+                }
 
-                        Text(
-                            text = stringResource(R.string.version_pid)
-                                .format(axeronInfo.getVersionCode(), axeronInfo.serverInfo.pid),
-                            style = MaterialTheme.typography.bodySmall
-                        )
+                // Title
+                Text(
+                    text = when {
+                        isUpdating -> stringResource(R.string.updating)
+                        isNeedExtraStep -> stringResource(R.string.home_need_fix)
+                        isRunning -> "Astro Shell"
+                        else -> stringResource(R.string.home_not_running)
+                    },
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = onSurface
+                )
 
-                        Spacer(Modifier.weight(1f))
+                // Subtitle
+                Text(
+                    text = when {
+                        isUpdating -> stringResource(R.string.server_updating_version)
+                            .format(axeronInfo.getVersionCode(), VERSION_CODE)
+                        isNeedExtraStep -> stringResource(R.string.home_need_fix_msg)
+                        isRunning -> "PID ${axeronInfo.serverInfo.pid}"
+                        else -> stringResource(R.string.home_not_running_msg)
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = onSurfaceVariant
+                )
 
+                Spacer(Modifier.height(4.dp))
+
+                // Bottom row: uptime | VERSION | ARCH
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (isRunning) {
                         var time by remember { mutableLongStateOf(0) }
                         LaunchedEffect(Unit) {
                             while (true) {
@@ -457,56 +455,74 @@ fun StatusCard(
                             return "T+$dayPart%02d:%02d:%02d".format(hours, minutes, seconds)
                         }
 
-                        Text(
-                            text = formatUptime(time),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-
-                else -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .offset(20.dp, 30.dp),
-                        contentAlignment = Alignment.BottomEnd
-                    ) {
-                        Icon(
-                            modifier = Modifier.size(145.dp),
-                            imageVector = Icons.Outlined.Cancel,
-                            contentDescription = null
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        fadeColor.copy(alpha = 0.0f),
-                                        fadeColor.copy(alpha = 0.55f)
-                                    ),
-                                    startY = 0f,
-                                    endY = Float.POSITIVE_INFINITY
-                                )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Schedule,
+                                contentDescription = null,
+                                tint = primary,
+                                modifier = Modifier.size(18.dp)
                             )
-                    )
-                    Column(
-                        modifier = Modifier.padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.home_not_running),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
+                            Text(
+                                text = formatUptime(time).removePrefix("T+"),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontFamily = FontFamily.Monospace,
+                                color = onSurface,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    } else {
+                        Spacer(Modifier.weight(1f))
+                    }
+
+                    if (isRunning) {
+                        Box(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .height(46.dp)
+                                .background(primary.copy(alpha = 0.3f))
                         )
-                        Text(
-                            text = stringResource(R.string.home_not_running_msg),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        Spacer(Modifier.width(16.dp))
+
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Text(
+                                text = "VERSION",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = onSurfaceVariant,
+                                letterSpacing = 1.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = axeronInfo.getVersionCode().toString(),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = onSurface
+                            )
+                        }
+                        Spacer(Modifier.width(20.dp))
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Text(
+                                text = "ARCH",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = onSurfaceVariant,
+                                letterSpacing = 1.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = Build.SUPPORTED_ABIS.firstOrNull()
+                                    ?.substringBefore("-")?.uppercase() ?: "—",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = onSurface
+                            )
+                        }
                     }
                 }
             }
@@ -561,10 +577,9 @@ fun WarningCard(
     color: Color = MaterialTheme.colorScheme.error,
     onClick: (() -> Unit)? = null
 ) {
-    ElevatedCard(
+    Card(
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.elevatedCardColors(containerColor = color),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp)
+        colors = CardDefaults.cardColors(containerColor = color)
     ) {
         Row(
             modifier = Modifier
@@ -580,77 +595,133 @@ fun WarningCard(
 @Composable
 fun InfoCard(activateViewModel: ActivateViewModel) {
     val axeronInfo = activateViewModel.axeronInfo
+    val primary = MaterialTheme.colorScheme.primary
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
 
-    ElevatedCard(
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+    Card(
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.22f)
         ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, primary.copy(alpha = 0.2f)),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 6.dp)
-        ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // Header row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 18.dp, vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Settings,
+                    contentDescription = null,
+                    tint = primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    text = "SYSTEM",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.5.sp,
+                    color = onSurface
+                )
+                Spacer(Modifier.weight(1f))
+                Text(
+                    text = "Android ${Build.VERSION.RELEASE} / SDK ${Build.VERSION.SDK_INT}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = onSurfaceVariant
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(primary.copy(alpha = 0.15f))
+            )
+
             @Composable
-            fun InfoRow(label: String, content: String, icon: Any? = null) {
+            fun InfoRow(
+                label: String,
+                content: String,
+                icon: Any? = null,
+                showDivider: Boolean = true
+            ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 14.dp, horizontal = 18.dp),
+                        .padding(horizontal = 18.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (icon != null) {
                         when (icon) {
                             is ImageVector -> Icon(
                                 imageVector = icon,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                tint = onSurfaceVariant,
                                 contentDescription = null,
                                 modifier = Modifier
                                     .padding(end = 20.dp)
-                                    .size(22.dp)
+                                    .size(20.dp)
                             )
                             is Painter -> Icon(
                                 painter = icon,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                tint = onSurfaceVariant,
                                 contentDescription = null,
                                 modifier = Modifier
                                     .padding(end = 20.dp)
-                                    .size(22.dp)
+                                    .size(20.dp)
                             )
                         }
                     }
                     Text(
                         text = label,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = onSurfaceVariant
                     )
                     Spacer(Modifier.weight(1f))
                     Text(
                         text = content,
                         style = MaterialTheme.typography.bodyMedium,
                         textAlign = TextAlign.End,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        color = onSurface
+                    )
+                }
+                if (showDivider) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 58.dp)
+                            .height(1.dp)
+                            .background(primary.copy(alpha = 0.08f))
                     )
                 }
             }
 
             InfoRow(
-                label = stringResource(R.string.android_version),
-                content = "${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})",
+                label = "Android",
+                content = "${Build.VERSION.RELEASE} / SDK ${Build.VERSION.SDK_INT}",
                 icon = Icons.Filled.Android,
             )
             InfoRow(
-                label = stringResource(R.string.abi_supported),
+                label = "Architecture",
                 content = Build.SUPPORTED_ABIS.joinToString(", "),
                 icon = Icons.Filled.Memory,
             )
             InfoRow(
-                label = stringResource(R.string.selinux_context),
+                label = "SELinux",
                 content = axeronInfo.serverInfo.selinuxContext,
                 icon = Icons.Filled.Security,
+            )
+            InfoRow(
+                label = "Process",
+                content = axeronInfo.serverInfo.pid.toString(),
+                icon = Icons.Outlined.Description,
+                showDivider = false
             )
         }
     }
@@ -660,40 +731,52 @@ fun InfoCard(activateViewModel: ActivateViewModel) {
 fun LearnCard() {
     val uriHandler = LocalUriHandler.current
     val learnAxManager = "https://github.com/antyhacker75-cmyk/AxManager"
+    val primary = MaterialTheme.colorScheme.primary
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
 
-    ElevatedCard(
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+    Card(
+        onClick = { uriHandler.openUri(learnAxManager) },
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.22f)
         ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp),
-        onClick = { uriHandler.openUri(learnAxManager) }
+        border = BorderStroke(1.dp, primary.copy(alpha = 0.2f))
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(22.dp),
+                .padding(20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Box(
+                modifier = Modifier
+                    .size(46.dp)
+                    .background(primary.copy(alpha = 0.14f), RoundedCornerShape(14.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
+                    contentDescription = null,
+                    tint = primary,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Spacer(Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = stringResource(R.string.learn_more),
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = onSurface
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = stringResource(R.string.learn_more_msg),
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    style = MaterialTheme.typography.bodySmall,
+                    color = onSurfaceVariant
                 )
             }
-            Icon(
-                modifier = Modifier.padding(start = 24.dp),
-                imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
-                contentDescription = "Support to github",
-            )
         }
     }
 }
@@ -703,52 +786,70 @@ fun IssueReportCard() {
     val uriHandler = LocalUriHandler.current
     val githubIssueUrl = "https://github.com/antyhacker75-cmyk/AxManager/issues"
     val telegramUrl = "https://t.me/WashiWashi123"
+    val primary = MaterialTheme.colorScheme.primary
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
 
-    ElevatedCard(
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+    Card(
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.22f)
         ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 0.dp)
+        border = BorderStroke(1.dp, primary.copy(alpha = 0.2f))
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(22.dp),
+                .padding(20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = stringResource(R.string.report_issue),
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = onSurface
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = stringResource(R.string.report_issue_msg),
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    style = MaterialTheme.typography.bodySmall,
+                    color = onSurfaceVariant
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
                     text = stringResource(R.string.report_issue_msg2),
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    style = MaterialTheme.typography.bodySmall,
+                    color = onSurfaceVariant
                 )
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                IconButton(onClick = { uriHandler.openUri(githubIssueUrl) }) {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(primary.copy(alpha = 0.14f), RoundedCornerShape(14.dp))
+                        .clickable { uriHandler.openUri(githubIssueUrl) },
+                    contentAlignment = Alignment.Center
+                ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_github),
                         contentDescription = "Report to github",
+                        tint = primary,
+                        modifier = Modifier.size(22.dp)
                     )
                 }
-                IconButton(onClick = { uriHandler.openUri(telegramUrl) }) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(primary.copy(alpha = 0.14f), RoundedCornerShape(14.dp))
+                        .clickable { uriHandler.openUri(telegramUrl) },
+                    contentAlignment = Alignment.Center
+                ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_telegram),
                         contentDescription = "Report to telegram",
+                        tint = primary,
+                        modifier = Modifier.size(22.dp)
                     )
                 }
             }
