@@ -11,17 +11,30 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeveloperMode
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.FilterAlt
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -48,6 +61,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -62,7 +78,6 @@ import frb.axeron.api.AxeronPluginService
 import frb.axeron.api.AxeronPluginService.ensureManageExternalStorageAllowed
 import frb.axeron.manager.R
 import frb.axeron.manager.ui.component.AxSnackBarHost
-import frb.axeron.manager.ui.component.SearchAppBar
 import frb.axeron.manager.ui.component.SettingsItem
 import frb.axeron.manager.ui.component.rememberLoadingDialog
 import frb.axeron.manager.ui.screen.FlashIt
@@ -93,23 +108,29 @@ fun PluginScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGlo
 
     val listState = rememberLazyListState()
     var showFab by remember { mutableStateOf(true) }
+    var selectedFilter by remember { mutableStateOf(0) }
+
+    val primary = MaterialTheme.colorScheme.primary
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
+
+    val allCount = pluginViewModel.plugins.size
+    val loadedCount = pluginViewModel.plugins.count { it.enabled && !it.remove }
+    val disabledCount = pluginViewModel.plugins.count { !it.enabled && !it.remove }
 
     LaunchedEffect(listState) {
         var lastIndex = listState.firstVisibleItemIndex
         var lastOffset = listState.firstVisibleItemScrollOffset
-
         snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
             .collect { (currIndex, currOffset) ->
                 val isScrollingDown = currIndex > lastIndex ||
                         (currIndex == lastIndex && currOffset > lastOffset + 4)
                 val isScrollingUp = currIndex < lastIndex ||
                         (currIndex == lastIndex && currOffset < lastOffset - 4)
-
                 when {
                     isScrollingDown && showFab -> showFab = false
                     isScrollingUp && !showFab -> showFab = true
                 }
-
                 lastIndex = currIndex
                 lastOffset = currOffset
             }
@@ -121,39 +142,151 @@ fun PluginScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGlo
 
     var showExtraDialog by remember { mutableStateOf(false) }
 
-    ExtraFilterSettings(
-        showExtraDialog,
-        settingsViewModel,
-        pluginViewModel
-    ) {
+    ExtraFilterSettings(showExtraDialog, settingsViewModel, pluginViewModel) {
         showExtraDialog = false
     }
 
     Scaffold(
         topBar = {
-            SearchAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.plugin),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                },
-                searchLabel = stringResource(R.string.search_label_plugin),
-                searchText = pluginViewModel.search,
-                onSearchTextChange = { pluginViewModel.search = it },
-                onClearClick = { pluginViewModel.search = "" },
-                scrollBehavior = scrollBehavior,
-                action = {
-                    IconButton(
-                        onClick = {
-                            showExtraDialog = true
-                        })
-                    {
-                        Icon(Icons.Outlined.MoreVert, null)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(horizontal = 16.dp)
+                    .padding(top = 24.dp, bottom = 12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row {
+                            Text(
+                                text = "Plugin ",
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = onSurface
+                            )
+                            Text(
+                                text = "Manager",
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = primary
+                            )
+                        }
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            text = "Load · Manage · Optimize",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = onSurfaceVariant
+                        )
+                    }
+                    IconButton(onClick = { showExtraDialog = true }) {
+                        Icon(
+                            imageVector = Icons.Outlined.MoreVert,
+                            contentDescription = null,
+                            tint = onSurface
+                        )
                     }
                 }
-            )
+
+                Spacer(Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(46.dp)
+                        .border(1.dp, primary.copy(alpha = 0.45f), RoundedCornerShape(percent = 50))
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = null,
+                        tint = onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    BasicTextField(
+                        value = pluginViewModel.search,
+                        onValueChange = { pluginViewModel.search = it },
+                        singleLine = true,
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(color = onSurface),
+                        cursorBrush = SolidColor(primary),
+                        modifier = Modifier.weight(1f),
+                        decorationBox = { inner ->
+                            if (pluginViewModel.search.isEmpty()) {
+                                Text(
+                                    text = stringResource(R.string.search_label_plugin),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = onSurfaceVariant
+                                )
+                            }
+                            inner()
+                        }
+                    )
+                    if (pluginViewModel.search.isNotEmpty()) {
+                        IconButton(
+                            onClick = { pluginViewModel.search = "" },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = null,
+                                tint = onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, primary.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
+                        .padding(4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    FilterPill(
+                        text = "All ($allCount)",
+                        selected = selectedFilter == 0,
+                        primary = primary,
+                        onSurfaceVariant = onSurfaceVariant,
+                        onClick = { selectedFilter = 0 },
+                        modifier = Modifier.weight(1f)
+                    )
+                    FilterPill(
+                        text = "Loaded ($loadedCount)",
+                        selected = selectedFilter == 1,
+                        primary = primary,
+                        onSurfaceVariant = onSurfaceVariant,
+                        onClick = { selectedFilter = 1 },
+                        modifier = Modifier.weight(1f),
+                        showDot = true
+                    )
+                    FilterPill(
+                        text = "Disabled ($disabledCount)",
+                        selected = selectedFilter == 2,
+                        primary = primary,
+                        onSurfaceVariant = onSurfaceVariant,
+                        onClick = { selectedFilter = 2 },
+                        modifier = Modifier.weight(1f),
+                        showDot = true,
+                        dotColor = onSurfaceVariant
+                    )
+                    FilterPill(
+                        text = "System",
+                        selected = selectedFilter == 3,
+                        primary = primary,
+                        onSurfaceVariant = onSurfaceVariant,
+                        onClick = { selectedFilter = 3 },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
         },
         floatingActionButton = {
             AnimatedVisibility(
@@ -164,12 +297,9 @@ fun PluginScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGlo
                 val selectZipLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.StartActivityForResult()
                 ) { result ->
-                    if (result.resultCode != RESULT_OK) {
-                        return@rememberLauncherForActivityResult
-                    }
+                    if (result.resultCode != RESULT_OK) return@rememberLauncherForActivityResult
                     val data = result.data ?: return@rememberLauncherForActivityResult
                     val clipData = data.clipData
-
                     val installers = mutableListOf<PluginInstaller>()
                     if (clipData != null) {
                         for (i in 0 until clipData.itemCount) {
@@ -178,15 +308,10 @@ fun PluginScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGlo
                             }
                         }
                     } else {
-                        data.data?.let {
-                            installers.add(PluginInstaller(it))
-                        }
+                        data.data?.let { installers.add(PluginInstaller(it)) }
                     }
-
                     if (installers.isEmpty()) return@rememberLauncherForActivityResult
-
                     pluginViewModel.updateZipUris(installers)
-
                     navigator.navigate(FlashScreenDestination(FlashIt.FlashPlugins(installers)))
                     pluginViewModel.clearZipUris()
                     pluginViewModel.markNeedRefresh()
@@ -194,11 +319,7 @@ fun PluginScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGlo
 
                 val loadingDialog = rememberLoadingDialog()
                 val scope = rememberCoroutineScope()
-
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     AnimatedVisibility(
                         visible = pluginViewModel.isNeedReignite,
                         enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
@@ -213,10 +334,7 @@ fun PluginScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGlo
                                     val success = loadingDialog.withLoading {
                                         AxeronPluginService.igniteSuspendService()
                                     }
-
-                                    if (success) {
-                                        pluginViewModel.fetchModuleList()
-                                    }
+                                    if (success) pluginViewModel.fetchModuleList()
                                 }
                             }
                         ) {
@@ -228,6 +346,9 @@ fun PluginScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGlo
 
                     val permissionDenied = stringResource(R.string.permission_denied)
                     FloatingActionButton(
+                        containerColor = primary,
+                        contentColor = Color.White,
+                        shape = CircleShape,
                         onClick = {
                             val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
                                 setType("application/zip")
@@ -235,12 +356,8 @@ fun PluginScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGlo
                             }
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                                 ensureManageExternalStorageAllowed(context) {
-                                    if (it) {
-                                        selectZipLauncher.launch(intent)
-                                    } else {
-                                        Toast.makeText(context, permissionDenied, Toast.LENGTH_LONG)
-                                            .show()
-                                    }
+                                    if (it) selectZipLauncher.launch(intent)
+                                    else Toast.makeText(context, permissionDenied, Toast.LENGTH_LONG).show()
                                 }
                             } else {
                                 selectZipLauncher.launch(intent)
@@ -261,13 +378,7 @@ fun PluginScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGlo
             modifier = Modifier.padding(paddingValues),
             onInstallModule = {
                 navigator.navigate(
-                    FlashScreenDestination(
-                        FlashIt.FlashPlugins(
-                            listOf(
-                                PluginInstaller(it)
-                            )
-                        )
-                    )
+                    FlashScreenDestination(FlashIt.FlashPlugins(listOf(PluginInstaller(it))))
                 )
             },
             onClickModule = { plugin ->
@@ -282,6 +393,44 @@ fun PluginScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelGlo
             context = context,
             snackBarHost = snackBarHost,
             listState = listState
+        )
+    }
+}
+
+@Composable
+private fun FilterPill(
+    text: String,
+    selected: Boolean,
+    primary: Color,
+    onSurfaceVariant: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    showDot: Boolean = false,
+    dotColor: Color = primary,
+) {
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(if (selected) primary.copy(alpha = 0.20f) else Color.Transparent)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        if (showDot) {
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .background(if (selected) primary else dotColor, CircleShape)
+            )
+            Spacer(Modifier.width(6.dp))
+        }
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+            color = if (selected) primary else onSurfaceVariant,
+            maxLines = 1
         )
     }
 }
@@ -315,7 +464,7 @@ fun ExtraFilterSettings(
                 SettingsItem(
                     label = stringResource(R.string.filter_settings),
                     iconVector = Icons.Outlined.FilterAlt
-                ) { enabled, checked ->
+                ) { _, _ ->
                     Column(
                         modifier = Modifier
                             .padding(horizontal = 12.dp)
@@ -385,7 +534,6 @@ fun ExtraFilterSettings(
                             }
                         }
                     }
-
                 }
 
                 SettingsItem(
@@ -401,7 +549,6 @@ fun ExtraFilterSettings(
         }
     }
 }
-
 
 val dummyPlugin = PluginInfo()
 
