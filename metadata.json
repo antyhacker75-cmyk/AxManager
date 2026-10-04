@@ -1,0 +1,6 @@
+{
+  "name": "Astro Star - Axeron Manager",
+  "description": "System optimization, ADB/Shizuku privilege manager, quick shell terminal, and plugin service manager for Android",
+  "request_frame_permission": false,
+  "capabilities": []
+}
