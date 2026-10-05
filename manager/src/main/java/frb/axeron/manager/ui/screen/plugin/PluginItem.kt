@@ -167,6 +167,7 @@ private fun TinyBadge(
     color: Color,
     filled: Boolean = true,
     showDot: Boolean = false,
+    contentColor: Color = color
 ) {
     Row(
         modifier = Modifier
@@ -182,14 +183,14 @@ private fun TinyBadge(
             Box(
                 modifier = Modifier
                     .size(5.dp)
-                    .background(color, CircleShape)
+                    .background(contentColor, CircleShape)
             )
         }
         Text(
             text = text,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.SemiBold,
-            color = color,
+            color = contentColor,
             fontSize = 10.sp,
             maxLines = 1
         )
@@ -370,17 +371,28 @@ fun PluginItem(
 
                     Column(modifier = Modifier.weight(1f)) {
 
+                        // ============ BADGES: SIZE + WEBUI + UPDATE/REMOVED ============
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(5.dp)
                         ) {
-                            if (plugin.prop.version.isNotEmpty()) {
+                            // Size badge
+                            TinyBadge(
+                                text = formatSize(plugin.size),
+                                color = onSurfaceVariant,
+                                filled = true,
+                                contentColor = onSurfaceVariant
+                            )
+                            // WebUI badge
+                            if (plugin.hasWebUi) {
                                 TinyBadge(
-                                    text = plugin.prop.version,
-                                    color = primary,
-                                    filled = false
+                                    text = "WEBUI",
+                                    color = Color(0xFFD4E157),
+                                    filled = true,
+                                    contentColor = Color(0xFF1F1F1F)
                                 )
                             }
+                            // Update / Removed badges
                             if (plugin.update) {
                                 TinyBadge(
                                     text = "UPDATE",
@@ -452,7 +464,7 @@ fun PluginItem(
                     )
                 }
 
-                // ============ INFO LINES (full width, aligned with description) ============
+                // ============ INFO LINES ============
                 Spacer(Modifier.height(8.dp))
 
                 InfoLine(Icons.Default.DateRange, pluginVersion, plugin.prop.version, onSurfaceVariant)
