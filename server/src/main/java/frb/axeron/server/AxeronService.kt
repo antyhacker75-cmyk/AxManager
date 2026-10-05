@@ -237,33 +237,33 @@ open class AxeronService :
             if (cached != null) return cached
 
             val built = Environment.Builder(false)
-                .put("AXERON", "true")
-                .put("HOSTNAME", "axeron")
+                .put("ASTROSTAR", "true")
+                .put("HOSTNAME", "astrostar")
                 .put(
-                    "AXERONDIR",
+                    "ASTROSTARDIR",
                     PathHelper.getWorkingPath(isRoot, AxeronApiConstant.folder.PARENT).absolutePath
                 )
                 .put(
-                    "AXERONBIN",
+                    "ASTROSTARBIN",
                     PathHelper.getWorkingPath(
                         isRoot,
                         AxeronApiConstant.folder.PARENT_BINARY
                     ).absolutePath
                 )
                 .put(
-                    "AXERONXBIN",
+                    "ASTROSTARXBIN",
                     PathHelper.getWorkingPath(
                         isRoot,
                         AxeronApiConstant.folder.PARENT_EXTERNAL_BINARY
                     ).absolutePath
                 )
-                .put("AXERONLIB", getManagerApplicationInfo()?.nativeLibraryDir)
-                .put("AXERONVER", VERSION_CODE.toString())
+                .put("ASTROSTARLIB", getManagerApplicationInfo()?.nativeLibraryDir)
+                .put("ASTROSTARVER", VERSION_CODE.toString())
                 .put(
                     "TMPDIR",
-                    PathHelper.getWorkingPath(isRoot,AxeronApiConstant.folder.PARENT_CACHE).absolutePath
+                    PathHelper.getWorkingPath(isRoot, AxeronApiConstant.folder.PARENT_CACHE).absolutePath
                 )
-                .put("PATH", $$"$AXERONXBIN:$PATH:$AXERONBIN")
+                .put("PATH", $$"$ASTROSTARXBIN:$PATH:$ASTROSTARBIN")
                 .build()
             cachedDefaultEnv = built
             return built
@@ -371,13 +371,6 @@ open class AxeronService :
             shizuku = ShizukuServiceIntercept(this)
         }
 
-        // make ApkChangedObservers lazy or start on-demand; and keep reference to listener so you can stop it
-//        val apkObserver = ApkChangedListener {
-//            if (getManagerApplicationInfo() == null) exitProcess(ServerConstants.MANAGER_APP_NOT_FOUND)
-//        }
-//        ApkChangedObservers.start(ai.sourceDir, mainHandler, apkObserver)
-
-
         BinderSender.register(asInterface(this))
 
         mainHandler.post {
@@ -427,10 +420,9 @@ open class AxeronService :
         val cached = cachedMergedEnv
         if (cached != null) return cached
 
-        // avoid extra temporary HashMap allocations — rely on Builder to copy if needed
         val merged = Environment.Builder(true)
-            .putAll(getDefaultEnvironment().envMap) // prefer to pass the map directly
-            .putAll(environmentManager.getAll())    // avoid new HashMap(...)
+            .putAll(getDefaultEnvironment().envMap)
+            .putAll(environmentManager.getAll())
             .build()
 
         cachedMergedEnv = merged
@@ -441,7 +433,6 @@ open class AxeronService :
         val cached = cachedNewEnv
         if (cached != null) return cached
 
-        // if Environment accepts a Map and you can keep it read-only, pass asMap() / toMap()
         val newEnv = Environment(HashMap(environmentManager.getAll()), true)
         cachedNewEnv = newEnv
         return newEnv
@@ -457,8 +448,7 @@ open class AxeronService :
     }
 
     override fun setNewEnvironment(env: Environment) {
-        environmentManager.replaceAllBlocking(HashMap(env.envMap)) // manager needs mutability
-        // invalidate cached refs deterministically
+        environmentManager.replaceAllBlocking(HashMap(env.envMap))
         cachedMergedEnv = null
         cachedNewEnv = null
         userServiceManager.environment =
@@ -702,10 +692,6 @@ open class AxeronService :
 
         var replyServerVersion = SHIZUKU_SERVER_VERSION
         if (apiVersion == -1) {
-            // ShizukuBinderWrapper has adapted API v13 in dev.rikka.shizuku:api 12.2.0, however
-            // attachApplication in 12.2.0 is still old, so that server treat the client as pre 13.
-            // This finally cause transactRemote fails.
-            // So we can pass 12 here to pretend we are v12 server.
             replyServerVersion = 12
         }
 
@@ -777,36 +763,10 @@ open class AxeronService :
                 val isSelf = it.packageName == MANAGER_APPLICATION_ID
                 val isShizukuSelf = it.packageName == SHIZUKU_MANAGER_APPLICATION_ID
 
-                !isSystem && !isSelf&& !isShizukuSelf
+                !isSystem && !isSelf && !isShizukuSelf
             }
 
             list.addAll(packages)
-
-//            for (pi in packages) {
-//                if (pi.packageName == MANAGER_APPLICATION_ID) continue
-//
-//                val appInfo = pi.applicationInfo ?: continue
-//                val uid = appInfo.uid
-//
-//                val entry = configManager.find(uid)
-//                val flags = entry?.let {
-//                    if (it.packages != null && !it.packages.contains(pi.packageName)) {
-//                        return@let 0 // skip by flags=0
-//                    }
-//                    it.flags and ConfigManager.MASK_PERMISSION
-//                } ?: 0
-//
-//                when {
-//                    flags != 0 -> {
-//                        list.add(pi)
-//                    }
-//
-//                    appInfo.metaData?.getBoolean("moe.shizuku.client.V3_SUPPORT", false) == true &&
-//                            pi.requestedPermissions?.contains(PERMISSION) == true -> {
-//                        list.add(pi)
-//                    }
-//                }
-//            }
         }
 
         return ParcelableListSlice(list)
