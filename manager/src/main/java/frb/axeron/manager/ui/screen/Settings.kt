@@ -6,10 +6,10 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -49,6 +48,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -63,7 +64,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -112,9 +112,7 @@ fun SettingsScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelG
 
     var showDevDialog by remember { mutableStateOf(false) }
 
-    DeveloperInfo(showDevDialog) {
-        showDevDialog = false
-    }
+    DeveloperInfo(showDevDialog) { showDevDialog = false }
 
     Scaffold(
         topBar = {
@@ -123,7 +121,7 @@ fun SettingsScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelG
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.surface)
                     .padding(horizontal = 20.dp)
-                    .padding(top = 20.dp, bottom = 12.dp)
+                    .padding(top = 24.dp, bottom = 12.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -170,7 +168,7 @@ fun SettingsScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelG
                     }
                 }
 
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(12.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -207,7 +205,7 @@ fun SettingsScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelG
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
 
-            // ===== Axeron Permission =====
+            // ============ Axeron Permission ============
             AnimatedVisibility(visible = axeronRunning) {
                 val lifecycleOwner = rememberLifecycleOwner()
                 DisposableEffect(Unit) {
@@ -217,10 +215,9 @@ fun SettingsScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelG
                         }
                     }
                     lifecycleOwner.lifecycle.addObserver(observer)
-                    onDispose {
-                        lifecycleOwner.lifecycle.removeObserver(observer)
-                    }
+                    onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
                 }
+
                 SettingCard {
                     SettingRow(
                         iconPainter = painterResource(R.drawable.ic_axeron),
@@ -236,7 +233,7 @@ fun SettingsScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelG
                 }
             }
 
-            // ===== TCP Mode =====
+            // ============ TCP Mode ============
             SettingCard {
                 SettingRow(
                     iconVector = Icons.Filled.Adb,
@@ -251,11 +248,11 @@ fun SettingsScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelG
                 )
 
                 AnimatedVisibility(visible = settings.isTcpModeEnabled) {
-                    TcpPortSubCard(settings)
+                    TcpPortPanel(settings)
                 }
             }
 
-            // ===== Activate on Boot =====
+            // ============ Activate on Boot ============
             SettingCard {
                 SettingRow(
                     iconVector = Icons.Filled.PowerSettingsNew,
@@ -270,7 +267,7 @@ fun SettingsScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelG
                 )
             }
 
-            // ===== Relog to Ignite =====
+            // ============ Relog to Ignite ============
             SettingCard {
                 SettingRow(
                     iconVector = Icons.Filled.Refresh,
@@ -285,52 +282,51 @@ fun SettingsScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelG
                 )
             }
 
-            // ===== Reset Astro Star =====
+            // ============ Reset Astro Star ============
             AnimatedVisibility(visible = axeronRunning) {
                 val title = stringResource(R.string.ask_reset_path)
                 val content = stringResource(R.string.ask_reset_path_desc)
                 val confirm = stringResource(R.string.reset)
                 val dismiss = stringResource(R.string.cancel)
 
-                SettingCard(
-                    onClick = {
-                        scope.launch {
-                            val confirmResult = confirmDialog.awaitConfirm(
-                                title,
-                                content = content.format(
-                                    PathHelper.getWorkingPath(
-                                        Axeron.getAxeronInfo().isRoot(),
-                                        AxeronApiConstant.folder.PARENT
-                                    ).absolutePath
-                                ),
-                                confirm = confirm,
-                                dismiss = dismiss
-                            )
-                            if (confirmResult == ConfirmResult.Confirmed) {
-                                navigator.navigate(
-                                    FlashScreenDestination(FlashIt.FlashUninstall)
-                                )
-                            }
-                        }
-                    }
-                ) {
+                SettingCard {
                     SettingRow(
                         iconVector = Icons.Filled.FolderDelete,
                         title = stringResource(R.string.reset_path),
                         description = stringResource(R.string.reset_path_desc),
+                        onClick = {
+                            scope.launch {
+                                val confirmResult = confirmDialog.awaitConfirm(
+                                    title,
+                                    content = content.format(
+                                        PathHelper.getWorkingPath(
+                                            Axeron.getAxeronInfo().isRoot(),
+                                            AxeronApiConstant.folder.PARENT
+                                        ).absolutePath
+                                    ),
+                                    confirm = confirm,
+                                    dismiss = dismiss
+                                )
+                                if (confirmResult == ConfirmResult.Confirmed) {
+                                    navigator.navigate(
+                                        FlashScreenDestination(FlashIt.FlashUninstall)
+                                    )
+                                }
+                            }
+                        },
                         trailing = {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                                 contentDescription = null,
                                 tint = onSurfaceVariant.copy(alpha = 0.5f),
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     )
                 }
             }
 
-            // ===== Bottom grouped card =====
+            // ============ Bottom group: Editor / Appearance / Developer ============
             Card(
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -340,23 +336,23 @@ fun SettingsScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelG
                 Column {
                     AnimatedVisibility(visible = axeronRunning) {
                         Column {
-                            SettingRowWithChevron(
+                            MenuRow(
                                 iconVector = Icons.Filled.Edit,
                                 title = stringResource(R.string.settings_editor),
                                 onClick = { navigator.navigate(SettingsEditorScreenDestination) }
                             )
-                            DividerLine()
+                            MenuDivider()
                         }
                     }
 
-                    SettingRowWithChevron(
+                    MenuRow(
                         iconVector = Icons.Filled.Palette,
                         title = stringResource(R.string.appearance),
                         onClick = { navigator.navigate(AppearanceScreenDestination) }
                     )
-                    DividerLine()
+                    MenuDivider()
 
-                    SettingRowWithChevron(
+                    MenuRow(
                         iconVector = Icons.Filled.BugReport,
                         title = stringResource(R.string.developer),
                         onClick = { navigator.navigate(DeveloperScreenDestination) }
@@ -368,24 +364,21 @@ fun SettingsScreen(navigator: DestinationsNavigator, viewModelGlobal: ViewModelG
 }
 
 // ============================================================
-// Layout helpers
+// Custom row building blocks
 // ============================================================
 
 @Composable
-private fun SettingCard(
-    onClick: (() -> Unit)? = null,
-    content: @Composable ColumnScope.() -> Unit,
-) {
+private fun SettingCard(content: @Composable () -> Unit) {
     val primary = MaterialTheme.colorScheme.primary
     Card(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, primary.copy(alpha = 0.35f)),
-        onClick = onClick ?: {},
-        enabled = onClick != null,
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(14.dp), content = content)
+        Column(modifier = Modifier.padding(14.dp)) {
+            content()
+        }
     }
 }
 
@@ -395,6 +388,7 @@ private fun SettingRow(
     iconPainter: Painter? = null,
     title: String,
     description: String? = null,
+    onClick: (() -> Unit)? = null,
     trailing: @Composable (() -> Unit)? = null,
 ) {
     val primary = MaterialTheme.colorScheme.primary
@@ -402,15 +396,23 @@ private fun SettingRow(
     val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
 
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (onClick != null) Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onClick() }
+                else Modifier
+            )
+            .padding(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(46.dp)
-                .clip(RoundedCornerShape(13.dp))
-                .background(primary.copy(alpha = 0.08f))
-                .border(1.dp, primary.copy(alpha = 0.45f), RoundedCornerShape(13.dp)),
+                .size(48.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(primary.copy(alpha = 0.06f))
+                .border(1.dp, primary.copy(alpha = 0.55f), RoundedCornerShape(14.dp)),
             contentAlignment = Alignment.Center
         ) {
             when {
@@ -457,7 +459,7 @@ private fun SettingRow(
 }
 
 @Composable
-private fun SettingRowWithChevron(
+private fun MenuRow(
     iconVector: ImageVector,
     title: String,
     onClick: () -> Unit,
@@ -469,17 +471,16 @@ private fun SettingRowWithChevron(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color.Transparent)
-            .padding(horizontal = 4.dp, vertical = 12.dp),
+            .clickable { onClick() }
+            .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(44.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(primary.copy(alpha = 0.08f))
-                .border(1.dp, primary.copy(alpha = 0.45f), RoundedCornerShape(12.dp)),
+                .size(46.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(primary.copy(alpha = 0.06f))
+                .border(1.dp, primary.copy(alpha = 0.55f), RoundedCornerShape(14.dp)),
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -500,25 +501,23 @@ private fun SettingRowWithChevron(
             modifier = Modifier.weight(1f)
         )
 
-        IconButton(onClick = onClick, modifier = Modifier.size(28.dp)) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
-                tint = onSurfaceVariant.copy(alpha = 0.6f),
-                modifier = Modifier.size(18.dp)
-            )
-        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = onSurfaceVariant.copy(alpha = 0.5f),
+            modifier = Modifier.size(20.dp)
+        )
     }
 }
 
 @Composable
-private fun DividerLine() {
+private fun MenuDivider() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 62.dp)
+            .padding(horizontal = 14.dp)
             .height(1.dp)
-            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f))
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
     )
 }
 
@@ -545,7 +544,7 @@ private fun AxSwitch(
 }
 
 @Composable
-private fun TcpPortSubCard(
+private fun TcpPortPanel(
     settings: frb.axeron.manager.ui.viewmodel.SettingsViewModel,
 ) {
     val primary = MaterialTheme.colorScheme.primary
@@ -560,15 +559,15 @@ private fun TcpPortSubCard(
     val portInt = tcpPortText.toIntOrNull()
     val isError = tcpPortText.isNotEmpty() && (portInt == null || portInt !in 1024..65535)
 
-    Spacer(Modifier.height(12.dp))
+    Spacer(Modifier.height(10.dp))
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f))
-            .border(1.dp, primary.copy(alpha = 0.18f), RoundedCornerShape(14.dp))
-            .padding(horizontal = 14.dp, vertical = 10.dp)
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.20f))
+            .border(1.dp, primary.copy(alpha = 0.20f), RoundedCornerShape(14.dp))
+            .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -577,36 +576,40 @@ private fun TcpPortSubCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = stringResource(R.string.tcp_port),
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.labelMedium,
                     color = onSurfaceVariant
                 )
                 Spacer(Modifier.height(2.dp))
-                BasicTextField(
+
+                // Plain TextField keeps the port editable, styled to look like the image
+                TextField(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { isFocused = it.isFocused },
                     value = tcpPortText,
                     onValueChange = { newValue ->
                         if (newValue.all { it.isDigit() } && newValue.length <= 5) {
                             tcpPortText = newValue
                         }
                     },
+                    isError = isError,
                     singleLine = true,
-                    textStyle = MaterialTheme.typography.titleLarge.copy(
+                    textStyle = MaterialTheme.typography.headlineSmall.copy(
                         fontWeight = FontWeight.Bold,
                         color = onSurface
                     ),
-                    cursorBrush = SolidColor(primary),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .onFocusChanged { isFocused = it.isFocused }
-                )
-                if (isError) {
-                    Spacer(Modifier.height(2.dp))
-                    Text(
-                        text = stringResource(R.string.invalid_port),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.error
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        disabledContainerColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        disabledIndicatorColor = Color.Transparent,
+                        errorIndicatorColor = Color.Transparent,
+                        errorContainerColor = Color.Transparent
                     )
-                }
+                )
             }
 
             Spacer(Modifier.width(8.dp))
@@ -636,17 +639,24 @@ private fun TcpPortSubCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.RestartAlt,
-                        contentDescription = "Re-Activate AxManager",
+                        contentDescription = "Re-Activate",
                         tint = onSurfaceVariant
                     )
                 }
+            } else {
+                Icon(
+                    imageVector = Icons.Default.RestartAlt,
+                    contentDescription = null,
+                    tint = onSurfaceVariant.copy(alpha = 0.7f),
+                    modifier = Modifier.size(22.dp)
+                )
             }
         }
     }
 }
 
 // ============================================================
-// Developer dialog (unchanged)
+// Developer bottom sheet (unchanged from your original)
 // ============================================================
 
 @OptIn(ExperimentalMaterial3Api::class)
