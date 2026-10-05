@@ -206,7 +206,7 @@ class AdbPairingService : Service() {
                 Settings.Global.getString(contentResolver, Starter.KEY_PAIR)
             )
             val key = try {
-                AdbKey(keyStore, "axeron")
+                AdbKey(keyStore, "astro star")
             } catch (e: Throwable) {
                 e.printStackTrace()
                 return@launch
@@ -233,7 +233,7 @@ class AdbPairingService : Service() {
         if (success) {
             if (isConnect) {
                 Log.i(TAG, "Connect succeed")
-                title = "Axeron activated"
+                title = "Astro Star activated"
                 text = "Service is now running"
                 stopSearch()
             } else {
@@ -370,7 +370,7 @@ class AdbPairingService : Service() {
         PendingIntent.getForegroundService(
             this,
             REPLY_REQUEST_CODE,
-            replyIntent(this,port),
+            replyIntent(this, port),
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
                 PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             else
