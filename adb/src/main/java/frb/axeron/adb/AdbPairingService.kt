@@ -178,7 +178,7 @@ class AdbPairingService : Service() {
                 Settings.Global.getString(contentResolver, Starter.KEY_PAIR)
             )
             val key = try {
-                AdbKey(keyStore, "axeron")
+                AdbKey(keyStore, "astro star")
             } catch (e: Throwable) {
                 Log.e(TAG, "Failed to load AdbKey", e)
                 return@launch
